@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Capturas | Tomato Monitor{% endblock %}
+{% block content %}
+  <section class="painel-pagina painel-cabecalho">
+    <div class="page-heading">
+      <div>
+        <h1>Capturas</h1>
+        <p>Imagens e condições ambientais registradas.</p>
+      </div>
+      <a class="btn btn-success" href="{% url 'capture_create' %}">Nova captura</a>
+    </div>
+    <form method="get" class="filter-panel filtros-integrados">
+      <div class="filter-fields">
+        <div class="filter-field filter-field-search">
+          <label>Pesquisar</label>
+          <input class="form-control"
+                 name="q"
+                 value="{{ request.GET.q }}"
+                 placeholder="Observação da captura">
+        </div>
+        <div class="filter-field">
+          <label>De</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_from"
+                 value="{{ request.GET.date_from }}">
+        </div>
+        <div class="filter-field">
+          <label>Até</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_to"
+                 value="{{ request.GET.date_to }}">
+        </div>
+        <div class="filter-field">
+          <label>Origem</label>
+          <select class="form-select" name="origin">
+            <option value="">Todas</option>
+            {% for value,label in origins %}
+              <option value="{{ value }}"
+                      {% if request.GET.origin == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Status</label>
+          <select class="form-select" name="status">
+            <option value="">Todos</option>
+            {% for value,label in statuses %}
+              <option value="{{ value }}"
+                      {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if user.is_staff %}
+          <div class="filter-field">
+            <label>Usuário</label>
+            <select class="form-select" name="user">
+              <option value="">Todos</option>
+              {% for item in users %}
+                <option value="{{ item.pk }}"
+                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="content-card p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              {% if user.is_staff %}
+                <th>Usuário</th>
+              {% endif %}
+              <th>Data</th>
+              <th>Origem</th>
+              <th>Ambiente</th>
+              <th>Status</th>
+              <th>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for capture in page_obj %}
+              <tr>
+                <td>{{ capture.pk }}</td>
+                {% if user.is_staff %}
+                  <td>{{ capture.user }}</td>
+                {% endif %}
+                <td>{{ capture.captured_at|date:'d/m/Y H:i' }}</td>
+                <td>{{ capture.get_origin_display }}</td>
+                <td>
+                  {% if capture.environmental_reading %}
+                    {{ capture.environmental_reading.temperature }} °C /
+                    {{ capture.environmental_reading.humidity }}%
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="status-pill">{{ capture.get_status_display }}</span>
+                </td>
+                <td>
+                  <a class="btn btn-success btn-sm" href="{% url 'capture_detail' capture.pk %}">Detalhes</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="empty-state">Nenhuma captura encontrada.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include 'includes/pagination.html' %}
+  </section>
+{% endblock %}

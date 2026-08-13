@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Captura #{{ capture.pk }} | Tomato Monitor{% endblock %}
+{% block content %}
+  <section class="painel-pagina painel-cabecalho">
+    <div class="page-heading">
+      <div>
+        <h1>Captura #{{ capture.pk }}</h1>
+        <p>
+          Registrada em {{ capture.captured_at|date:'d/m/Y H:i' }}
+          {% if user.is_staff %}por {{ capture.user }}{% endif %}.
+        </p>
+      </div>
+      <a class="btn btn-light" href="{% url 'capture_list' %}">Voltar às capturas</a>
+    </div>
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="row g-4">
+    <!-- Coluna da imagem e dos dados básicos. -->
+      <div class="col-md-5">
+        <div class="content-card mb-3">
+          {% if capture.image %}
+            <img class="img-fluid rounded w-100"
+                 src="{{ capture.image.url }}"
+                 alt="Folha capturada">
+          {% else %}
+            <div class="image-placeholder">Imagem não disponível</div>
+          {% endif %}
+        </div>
+        <div class="content-card">
+          <dl>
+            <dt>Origem</dt>
+            <dd>
+              {{ capture.get_origin_display }}
+            </dd>
+            <dt>Status</dt>
+            <dd>
+              {{ capture.get_status_display }}
+            </dd>
+            <dt>Observação</dt>
+            <dd>
+              {{ capture.observation|default:'—' }}
+            </dd>
+          </dl>
+          {% if capture.status == 'pendente' %}
+            <form method="post" action="{% url 'capture_process' capture.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-success w-100" type="submit">Analisar captura</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    <!-- Coluna da leitura, predição e alertas. -->
+      <div class="col-md-7">
+        <div class="content-card mb-3">
+          <h2>Leitura ambiental</h2>
+          {% if capture.environmental_reading %}
+            <p class="fs-5 mb-0">
+              {{ capture.environmental_reading.temperature }} °C ·
+              {{ capture.environmental_reading.humidity }}% UR
+            </p>
+          {% else %}
+            <p class="text-muted mb-0">Sem leitura disponível.</p>
+          {% endif %}
+        </div>
+        {% if capture.prediction %}
+          <div class="content-card mb-3">
+            <h2>Resultado da análise</h2>
+            <p class="mb-1">
+              <strong>{{ capture.prediction.predicted_class }}</strong>
+            </p>
+            <p>
+              Confiança: {{ capture.prediction.confidence }}%
+              ({{ capture.prediction.get_confidence_status_display }})
+            </p>
+            <h3 class="h6">Principais hipóteses</h3>
+            <ol>
+              {% for item in capture.prediction.top_three %}
+                <li>{{ item.class }} — {{ item.confidence|floatformat:2 }}%</li>
+              {% endfor %}
+            </ol>
+          </div>
+          <div class="content-card">
+            <h2>Alertas e recomendação</h2>
+            {% for alert in capture.prediction.alerts.all %}
+              <div class="alert alert-warning">
+                <strong>{{ alert.get_type_display }}:</strong>
+                {{ alert.message }}
+              </div>
+            {% empty %}
+              <div class="alert alert-success">Nenhum alerta gerado. Continue o monitoramento regular.</div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">A captura ainda não foi analisada.</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

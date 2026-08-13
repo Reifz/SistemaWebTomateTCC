@@ -1,0 +1,43 @@
+/* Área exibida quando um gráfico ainda não possui dados. */
+.chart-empty {
+  align-items: center;
+  background: #f7faf8;
+  border: 1px dashed #cbdad1;
+  border-radius: 0.65rem;
+  color: #6b7d75;
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  min-height: 240px;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Tablets e telas menores. */
+@media (max-width: 991.98px) {
+  .navbar-toggler {
+    display: block;
+    margin-left: auto;
+  }
+  .filter-panel .row > * {
+    flex: 0 0 100%;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* Celulares. */
+@media (max-width: 767.98px) {
+  body {
+    overflow-x: hidden;
+  }
+  .content-card {
+    padding: 1rem;
+  }
+  .chart-empty {
+    min-height: 150px;
+  }
+  .table-responsive .table {
+    min-width: 680px;
+  }
+}

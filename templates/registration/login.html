@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Entrar | Tomato Monitor{% endblock %}
+{% block content %}
+  <div class="row justify-content-center py-lg-5">
+    <div class="col-md-6 col-lg-4">
+      <div class="content-card">
+        <div class="card-header text-center mb-4 bg-success text-white py-3 rounded-top">
+          <h1 class="h3">Tomato Monitor</h1>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          {% if form.errors %}
+            <div class="alert alert-danger">E-mail ou senha inválidos.</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label" for="id_username">E-mail</label>
+            <input class="form-control"
+                   id="id_username"
+                   name="username"
+                   type="email"
+                   autocomplete="email"
+                   required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="id_password">Senha</label>
+            <input class="form-control"
+                   id="id_password"
+                   name="password"
+                   type="password"
+                   autocomplete="current-password"
+                   required>
+          </div>
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+          {% endif %}
+          <button class="btn btn-success w-100" type="submit">Entrar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

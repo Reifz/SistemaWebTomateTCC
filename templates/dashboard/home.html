@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Início | Tomato Monitor{% endblock %}
+{% block content %}
+  <section class="hero-panel painel-cabecalho mb-4">
+    <div>
+      <span class="eyebrow">Monitoramento inteligente</span>
+      <h1>Olá, {{ user.first_name|default:'bem-vindo' }}</h1>
+      <p>Acompanhe a saúde das plantas, as condições ambientais e os alertas.</p>
+    </div>
+    <!-- <a class="btn btn-light btn-lg" href="{% url 'capture_create' %}">Nova captura</a> -->
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="metric-card">
+          <span>Capturas</span>
+          <strong>{{ total_captures }}</strong>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="metric-card">
+          <span>Análises concluídas</span>
+          <strong>{{ processed_captures }}</strong>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="metric-card warning">
+          <span>Alertas ativos</span>
+          <strong>{{ active_alerts }}</strong>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="metric-card danger">
+          <span>Doenças detectadas</span>
+          <strong>{{ diseases_detected }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <section class="content-card">
+          <div class="section-heading">
+            <div>
+              <h2>Atividade recente</h2>
+              <p>Últimas capturas registradas</p>
+            </div>
+            <a class="btn btn-success btn-sm" href="{% url 'capture_list' %}">Ver todas</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Captura</th>
+                  <th>Data</th>
+                  <th>Status</th>
+                  <th>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for capture in latest_captures %}
+                  <tr>
+                    <td>#{{ capture.pk }}</td>
+                    <td>{{ capture.captured_at|date:'d/m/Y H:i' }}</td>
+                    <td>
+                      <span class="status-pill">{{ capture.get_status_display }}</span>
+                    </td>
+                    <td>
+                      <a class="btn btn-success btn-sm" href="{% url 'capture_detail' capture.pk %}">Detalhes</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="empty-state">Nenhuma captura registrada.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="col-lg-5">
+        <section class="content-card h-100">
+          <div class="section-heading">
+            <div>
+              <h2>Alertas recentes</h2>
+              <p>Ocorrências que pedem atenção</p>
+            </div>
+            <a class="btn btn-success btn-sm" href="{% url 'alert_list' %}">Ver todos</a>
+          </div>
+          {% for alert in latest_alerts %}
+            <div class="alert-row">
+              <span class="severity-dot severity-{{ alert.severity }}">
+              </span>
+              <div>
+                <strong>{{ alert.get_type_display }}</strong>
+                <p>{{ alert.message|truncatechars:90 }}</p>
+              </div>
+            </div>
+          {% empty %}
+            <div class="empty-state">Nenhum alerta registrado.</div>
+          {% endfor %}
+        </section>
+      </div>
+    </div>
+  </section>
+{% endblock %}

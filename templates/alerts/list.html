@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Alertas | Tomato Monitor{% endblock %}
+{% block content %}
+  <section class="painel-pagina painel-cabecalho">
+    <div class="page-heading">
+      <div>
+        <h1>Alertas</h1>
+        <p>Eventos ambientais e fitossanitários.</p>
+      </div>
+    </div>
+    <form method="get" class="filter-panel filtros-integrados">
+      <div class="filter-fields filter-fields-many">
+        <div class="filter-field filter-field-search">
+          <label>Pesquisar</label>
+          <input class="form-control"
+                 name="q"
+                 value="{{ request.GET.q }}"
+                 placeholder="Mensagem ou observação">
+        </div>
+        <div class="filter-field">
+          <label>De</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_from"
+                 value="{{ request.GET.date_from }}">
+        </div>
+        <div class="filter-field">
+          <label>Até</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_to"
+                 value="{{ request.GET.date_to }}">
+        </div>
+        <div class="filter-field">
+          <label>Tipo</label>
+          <select class="form-select" name="type">
+            <option value="">Todos</option>
+            {% for value,label in types %}
+              <option value="{{ value }}"
+                      {% if request.GET.type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Severidade</label>
+          <select class="form-select" name="severity">
+            <option value="">Todas</option>
+            {% for value,label in severities %}
+              <option value="{{ value }}"
+                      {% if request.GET.severity == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Situação</label>
+          <select class="form-select" name="viewed">
+            <option value="">Todas</option>
+            <option value="0" {% if request.GET.viewed == '0' %}selected{% endif %}>Não visualizado</option>
+            <option value="1" {% if request.GET.viewed == '1' %}selected{% endif %}>Visualizado</option>
+          </select>
+        </div>
+        {% if user.is_staff %}
+          <div class="filter-field">
+            <label>Usuário</label>
+            <select class="form-select" name="user">
+              <option value="">Todos</option>
+              {% for item in users %}
+                <option value="{{ item.pk }}"
+                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="content-card p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Data</th>
+              {% if user.is_staff %}
+                <th>Usuário</th>
+              {% endif %}
+              <th>Tipo</th>
+              <th>Severidade</th>
+              <th>Mensagem</th>
+              <th>Captura</th>
+              <th>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alert in page_obj %}
+              <tr class="{% if not alert.viewed %}unread-row{% endif %}">
+                <td>{{ alert.created_at|date:'d/m/Y H:i' }}</td>
+                {% if user.is_staff %}
+                  <td>{{ alert.capture.user }}</td>
+                {% endif %}
+                <td>{{ alert.get_type_display }}</td>
+                <td>
+                  <span class="badge severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+                </td>
+                <td>{{ alert.message }}</td>
+                <td>
+                  <a href="{% url 'capture_detail' alert.capture_id %}">#{{ alert.capture_id }}</a>
+                </td>
+                <td>
+                  {% if not alert.viewed %}
+                    <form method="post" action="{% url 'alert_read' alert.pk %}">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-secondary">Marcar como visto</button>
+                    </form>
+                  {% else %}
+                    <span class="text-muted">Visto</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="empty-state">Nenhum alerta encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include 'includes/pagination.html' %}
+  </section>
+{% endblock %}

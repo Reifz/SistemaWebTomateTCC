@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Histórico | Tomato Monitor{% endblock %}
+{% block content %}
+  <section class="painel-pagina painel-cabecalho">
+    <div class="page-heading">
+      <div>
+        <h1>Histórico de Analises</h1>
+        <p>Resultados e níveis de confiança.</p>
+      </div>
+    </div>
+    <form method="get" class="filter-panel filtros-integrados">
+      <div class="filter-fields filter-fields-many">
+        <div class="filter-field filter-field-search">
+          <label>Pesquisar</label>
+          <input class="form-control"
+                 name="q"
+                 value="{{ request.GET.q }}"
+                 placeholder="Classe ou observação">
+        </div>
+        <div class="filter-field">
+          <label>De</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_from"
+                 value="{{ request.GET.date_from }}">
+        </div>
+        <div class="filter-field">
+          <label>Até</label>
+          <input class="form-control"
+                 type="date"
+                 name="date_to"
+                 value="{{ request.GET.date_to }}">
+        </div>
+        <div class="filter-field">
+          <label>Classe</label>
+          <select class="form-select" name="class">
+            <option value="">Todas</option>
+            {% for item in classes %}
+              <option value="{{ item }}"
+                      {% if request.GET.class == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Severidade</label>
+          <select class="form-select" name="severity">
+            <option value="">Todas</option>
+            <option value="baixa"
+                    {% if request.GET.severity == 'baixa' %}selected{% endif %}>Baixa</option>
+            <option value="media"
+                    {% if request.GET.severity == 'media' %}selected{% endif %}>Média</option>
+            <option value="alta"
+                    {% if request.GET.severity == 'alta' %}selected{% endif %}>Alta</option>
+            <option value="critica"
+                    {% if request.GET.severity == 'critica' %}selected{% endif %}>Crítica</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Confiança</label>
+          <select class="form-select" name="confidence">
+            <option value="">Todas</option>
+            <option value="low"
+                    {% if request.GET.confidence == 'low' %}selected{% endif %}>Baixa</option>
+            <option value="medium"
+                    {% if request.GET.confidence == 'medium' %}selected{% endif %}>Média</option>
+            <option value="high"
+                    {% if request.GET.confidence == 'high' %}selected{% endif %}>Alta</option>
+          </select>
+        </div>
+        {% if user.is_staff %}
+          <div class="filter-field">
+            <label>Usuário</label>
+            <select class="form-select" name="user">
+              <option value="">Todos</option>
+              {% for item in users %}
+                <option value="{{ item.pk }}"
+                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="content-card p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Data</th>
+              {% if user.is_staff %}
+                <th>Usuário</th>
+              {% endif %}
+              <th>Captura</th>
+              <th>Classe</th>
+              <th>Confiança</th>
+              <th>Alertas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for prediction in page_obj %}
+              <tr>
+                <td>{{ prediction.predicted_at|date:'d/m/Y H:i' }}</td>
+                {% if user.is_staff %}
+                  <td>{{ prediction.capture.user }}</td>
+                {% endif %}
+                <td>
+                  <a href="{% url 'capture_detail' prediction.capture_id %}">#{{ prediction.capture_id }}</a>
+                </td>
+                <td>{{ prediction.predicted_class }}</td>
+                <td>{{ prediction.confidence }}% · {{ prediction.get_confidence_status_display }}</td>
+                <td>
+                  {% for alert in prediction.alerts.all %}
+                    <span class="badge severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+                  {% empty %}—{% endfor %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="empty-state">Nenhuma análise encontrada.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include 'includes/pagination.html' %}
+  </section>
+{% endblock %}
