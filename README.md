@@ -66,9 +66,3 @@ Defina `DB_ENGINE=mysql`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` e `DB_P
 3. Implementar pré-processamento e adaptador de inferência MobileNetV2.
 4. Executar processamento pesado em fila assíncrona.
 5. Integrar os serviços reais de sensores e inferência preservando os contratos das views e da API.
-
-## Colaboração
-
-As instruções para criar branches, commits e publicar o projeto estão em
-[`github.md`](github.md). Todo Pull Request para `main` executa os testes
-automaticamente pelo GitHub Actions.
