@@ -34,6 +34,9 @@
   .content-card {
     padding: 1rem;
   }
+  .content-card.content-card-com-header {
+    padding: 0;
+  }
   .chart-empty {
     min-height: 150px;
   }

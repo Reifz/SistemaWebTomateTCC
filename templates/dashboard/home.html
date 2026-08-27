@@ -12,41 +12,41 @@
   <section class="painel-pagina painel-conteudo">
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
-        <div class="metric-card">
-          <span>Capturas</span>
-          <strong>{{ total_captures }}</strong>
+        <div class="metric-card metric-card-com-header">
+          <header class="card-header">Capturas</header>
+          <div class="metric-card-body"><strong>{{ total_captures }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card">
-          <span>Análises concluídas</span>
-          <strong>{{ processed_captures }}</strong>
+        <div class="metric-card metric-card-com-header">
+          <header class="card-header">Análises concluídas</header>
+          <div class="metric-card-body"><strong>{{ processed_captures }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card warning">
-          <span>Alertas ativos</span>
-          <strong>{{ active_alerts }}</strong>
+        <div class="metric-card metric-card-com-header warning">
+          <header class="card-header">Alertas ativos</header>
+          <div class="metric-card-body"><strong>{{ active_alerts }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card danger">
-          <span>Doenças detectadas</span>
-          <strong>{{ diseases_detected }}</strong>
+        <div class="metric-card metric-card-com-header danger">
+          <header class="card-header">Doenças detectadas</header>
+          <div class="metric-card-body"><strong>{{ diseases_detected }}</strong></div>
         </div>
       </div>
     </div>
     <div class="row g-4">
       <div class="col-lg-7">
-        <section class="content-card">
-          <div class="section-heading">
+        <section class="content-card content-card-com-header h-100">
+          <header class="card-header section-heading">
             <div>
               <h2>Atividade recente</h2>
               <p>Últimas capturas registradas</p>
             </div>
             <a class="btn btn-success btn-sm" href="{% url 'capture_list' %}">Ver todas</a>
-          </div>
-          <div class="table-responsive">
+          </header>
+          <div class="card-body p-0 table-responsive">
             <table class="table">
               <thead>
                 <tr>
@@ -80,26 +80,28 @@
         </section>
       </div>
       <div class="col-lg-5">
-        <section class="content-card h-100">
-          <div class="section-heading">
+        <section class="content-card content-card-com-header h-100">
+          <header class="card-header section-heading">
             <div>
               <h2>Alertas recentes</h2>
               <p>Ocorrências que pedem atenção</p>
             </div>
             <a class="btn btn-success btn-sm" href="{% url 'alert_list' %}">Ver todos</a>
-          </div>
-          {% for alert in latest_alerts %}
-            <div class="alert-row">
-              <span class="severity-dot severity-{{ alert.severity }}">
-              </span>
-              <div>
-                <strong>{{ alert.get_type_display }}</strong>
-                <p>{{ alert.message|truncatechars:90 }}</p>
+          </header>
+          <div class="card-body">
+            {% for alert in latest_alerts %}
+              <div class="alert-row">
+                <span class="severity-dot severity-{{ alert.severity }}">
+                </span>
+                <div>
+                  <strong>{{ alert.get_type_display }}</strong>
+                  <p>{{ alert.message|truncatechars:90 }}</p>
+                </div>
               </div>
-            </div>
-          {% empty %}
-            <div class="empty-state">Nenhum alerta registrado.</div>
-          {% endfor %}
+            {% empty %}
+              <div class="empty-state">Nenhum alerta registrado.</div>
+            {% endfor %}
+          </div>
         </section>
       </div>
     </div>

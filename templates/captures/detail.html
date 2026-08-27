@@ -14,85 +14,93 @@
     </div>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="row g-4">
-    <!-- Coluna da imagem e dos dados básicos. -->
-      <div class="col-md-5">
-        <div class="content-card mb-3">
-          {% if capture.image %}
-            <img class="img-fluid rounded w-100"
-                 src="{{ capture.image.url }}"
-                 alt="Folha capturada">
-          {% else %}
-            <div class="image-placeholder">Imagem não disponível</div>
-          {% endif %}
-        </div>
-        <div class="content-card">
-          <dl>
-            <dt>Origem</dt>
-            <dd>
-              {{ capture.get_origin_display }}
-            </dd>
-            <dt>Status</dt>
-            <dd>
-              {{ capture.get_status_display }}
-            </dd>
-            <dt>Observação</dt>
-            <dd>
-              {{ capture.observation|default:'—' }}
-            </dd>
-          </dl>
-          {% if capture.status == 'pendente' %}
-            <form method="post" action="{% url 'capture_process' capture.pk %}">
-              {% csrf_token %}
-              <button class="btn btn-success w-100" type="submit">Analisar captura</button>
-            </form>
-          {% endif %}
-        </div>
-      </div>
-    <!-- Coluna da leitura, predição e alertas. -->
-      <div class="col-md-7">
-        <div class="content-card mb-3">
-          <h2>Leitura ambiental</h2>
-          {% if capture.environmental_reading %}
-            <p class="fs-5 mb-0">
-              {{ capture.environmental_reading.temperature }} °C ·
-              {{ capture.environmental_reading.humidity }}% UR
-            </p>
-          {% else %}
-            <p class="text-muted mb-0">Sem leitura disponível.</p>
-          {% endif %}
-        </div>
-        {% if capture.prediction %}
-          <div class="content-card mb-3">
-            <h2>Resultado da análise</h2>
-            <p class="mb-1">
-              <strong>{{ capture.prediction.predicted_class }}</strong>
-            </p>
-            <p>
-              Confiança: {{ capture.prediction.confidence }}%
-              ({{ capture.prediction.get_confidence_status_display }})
-            </p>
-            <h3 class="h6">Principais hipóteses</h3>
-            <ol>
-              {% for item in capture.prediction.top_three %}
-                <li>{{ item.class }} — {{ item.confidence|floatformat:2 }}%</li>
-              {% endfor %}
-            </ol>
-          </div>
-          <div class="content-card">
-            <h2>Alertas e recomendação</h2>
-            {% for alert in capture.prediction.alerts.all %}
-              <div class="alert alert-warning">
-                <strong>{{ alert.get_type_display }}:</strong>
-                {{ alert.message }}
+    <div class="row g-4 align-items-stretch capture-detail-grid">
+      <div class="col-md-5 d-flex">
+        <article class="content-card capture-card w-100">
+          <header class="capture-card-header">
+            <h2>Dados da captura</h2>
+          </header>
+          <div class="capture-card-body capture-summary-body">
+            {% if capture.image %}
+              <img class="capture-image img-fluid w-100"
+                   src="{{ capture.image.url }}"
+                   alt="Folha capturada">
+            {% else %}
+              <div class="image-placeholder">Imagem não disponível</div>
+            {% endif %}
+            <dl class="capture-metadata">
+              <div>
+                <dt>Origem</dt>
+                <dd>{{ capture.get_origin_display }}</dd>
               </div>
-            {% empty %}
-              <div class="alert alert-success">Nenhum alerta gerado. Continue o monitoramento regular.</div>
-            {% endfor %}
+              <div>
+                <dt>Status</dt>
+                <dd><span class="status-pill">{{ capture.get_status_display }}</span></dd>
+              </div>
+              <div class="capture-metadata-wide">
+                <dt>Observação</dt>
+                <dd>{{ capture.observation|default:'Não informada' }}</dd>
+              </div>
+            </dl>
+            {% if capture.status == 'pendente' %}
+              <form method="post" action="{% url 'capture_process' capture.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-success w-100" type="submit">Analisar captura</button>
+              </form>
+            {% endif %}
           </div>
+        </article>
+      </div>
+      <div class="col-md-7 d-flex">
+        <div class="capture-card-stack w-100">
+          <article class="content-card capture-card">
+            <header class="capture-card-header">
+              <h2>Leitura ambiental</h2>
+            </header>
+            <div class="capture-card-body">
+              {% if capture.environmental_reading %}
+                <div class="environment-values">
+                  <div><strong>{{ capture.environmental_reading.temperature }} °C</strong><span>Temperatura</span></div>
+                  <div><strong>{{ capture.environmental_reading.humidity }}%</strong><span>Umidade relativa</span></div>
+                </div>
+              {% else %}
+                <p class="text-muted mb-0">Sem leitura disponível.</p>
+              {% endif %}
+            </div>
+          </article>
+        {% if capture.prediction %}
+          <article class="content-card capture-card">
+            <header class="capture-card-header"><h2>Resultado da análise</h2></header>
+            <div class="capture-card-body">
+              <p class="mb-1"><strong>{{ capture.prediction.predicted_class }}</strong></p>
+              <p>Confiança: {{ capture.prediction.confidence }}% ({{ capture.prediction.get_confidence_status_display }})</p>
+              <h3 class="h6">Principais hipóteses</h3>
+              <ol class="mb-0">
+                {% for item in capture.prediction.top_three %}
+                  <li>{{ item.class }}: {{ item.confidence|floatformat:2 }}%</li>
+                {% endfor %}
+              </ol>
+            </div>
+          </article>
+          <article class="content-card capture-card">
+            <header class="capture-card-header"><h2>Alertas e recomendação</h2></header>
+            <div class="capture-card-body">
+              {% for alert in capture.prediction.alerts.all %}
+                <div class="alert alert-warning mb-2">
+                  <strong>{{ alert.get_type_display }}:</strong> {{ alert.message }}
+                </div>
+              {% empty %}
+                <div class="alert alert-success mb-0">Nenhum alerta gerado.</div>
+              {% endfor %}
+            </div>
+          </article>
         {% else %}
-          <div class="alert alert-info">A captura ainda não foi analisada.</div>
+          <article class="content-card capture-card">
+            <header class="capture-card-header"><h2>Resultado da análise</h2></header>
+            <div class="capture-card-body"><p class="text-muted mb-0">Captura não analisada.</p></div>
+          </article>
         {% endif %}
+        </div>
       </div>
     </div>
   </section>

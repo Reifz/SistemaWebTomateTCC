@@ -33,81 +33,89 @@
   <section class="painel-pagina painel-conteudo">
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
-        <div class="metric-card">
-          <span>Total de capturas</span>
-          <strong>{{ total_captures }}</strong>
+        <div class="metric-card metric-card-com-header">
+          <header class="card-header">Total de capturas</header>
+          <div class="metric-card-body"><strong>{{ total_captures }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card">
-          <span>Processadas</span>
-          <strong>{{ processed_captures }}</strong>
+        <div class="metric-card metric-card-com-header">
+          <header class="card-header">Processadas</header>
+          <div class="metric-card-body"><strong>{{ processed_captures }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card warning">
-          <span>Alertas ativos</span>
-          <strong>{{ active_alerts }}</strong>
+        <div class="metric-card metric-card-com-header warning">
+          <header class="card-header">Alertas ativos</header>
+          <div class="metric-card-body"><strong>{{ active_alerts }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card danger">
-          <span>Doenças detectadas</span>
-          <strong>{{ diseases_detected }}</strong>
+        <div class="metric-card metric-card-com-header danger">
+          <header class="card-header">Doenças detectadas</header>
+          <div class="metric-card-body"><strong>{{ diseases_detected }}</strong></div>
         </div>
       </div>
     </div>
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
-        <div class="content-card h-100">
-          <h2>Distribuição de classes</h2>
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header"><h2>Distribuição de classes</h2></header>
+          <div class="card-body">
           {% if distribution %}
             <canvas id="classChart">
             </canvas>
           {% else %}
             <div class="chart-empty">Ainda não há análises para exibir.</div>
           {% endif %}
+          </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="content-card h-100">
-          <h2>Temperatura e umidade</h2>
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header"><h2>Temperatura e umidade</h2></header>
+          <div class="card-body">
           {% if readings %}
             <canvas id="environmentChart">
             </canvas>
           {% else %}
             <div class="chart-empty">Ainda não há leituras ambientais.</div>
           {% endif %}
+          </div>
         </div>
       </div>
     </div>
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
-        <div class="content-card h-100">
-          <h2>Confiança média por classe</h2>
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header"><h2>Confiança média por classe</h2></header>
+          <div class="card-body">
           {% if class_statistics %}
             <div class="chart-container chart-container-tall"><canvas id="confidenceChart"></canvas></div>
           {% else %}
             <div class="chart-empty">Ainda não há previsões para calcular a confiança média.</div>
           {% endif %}
+          </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="content-card h-100">
-          <h2>Alertas por severidade — últimos 30 dias</h2>
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header"><h2>Alertas por severidade nos últimos 30 dias</h2></header>
+          <div class="card-body">
           {% if alerts_timeline_has_data %}
             <div class="chart-container"><canvas id="alertsTimelineChart"></canvas></div>
           {% else %}
             <div class="chart-empty">Nenhum alerta registrado nos últimos 30 dias.</div>
           {% endif %}
+          </div>
         </div>
       </div>
     </div>
     <div class="row g-4 mb-4">
       <div class="col-12">
-        <div class="content-card h-100 p-0">
-          <div class="dashboard-card-heading"><h2 class="mb-0">5 classes mais detectadas</h2></div>
-          <div class="table-responsive">
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header"><h2>5 classes mais detectadas</h2></header>
+          <div class="card-body p-0 table-responsive">
             <table class="table mb-0">
               <thead><tr><th>#</th><th>Classe</th><th>Total</th><th>Confiança média</th></tr></thead>
               <tbody>
@@ -129,12 +137,12 @@
     </div>
     <div class="row g-4">
       <div class="col-lg-7">
-        <div class="content-card">
-          <div class="section-heading">
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header section-heading">
             <h2>Últimas capturas</h2>
             <a class="btn btn-success btn-sm" href="{% url 'capture_list' %}">Ver todas</a>
-          </div>
-          <div class="table-responsive">
+          </header>
+          <div class="card-body p-0 table-responsive">
             <table class="table">
               <thead>
                 <tr>
@@ -168,23 +176,25 @@
         </div>
       </div>
       <div class="col-lg-5">
-        <div class="content-card">
-          <div class="section-heading">
+        <div class="content-card content-card-com-header h-100">
+          <header class="card-header section-heading">
             <h2>Últimos alertas</h2>
             <a class="btn btn-success btn-sm" href="{% url 'alert_list' %}">Ver todos</a>
-          </div>
-          {% for alert in latest_alerts %}
-            <div class="alert-row">
-              <span class="severity-dot severity-{{ alert.severity }}">
-              </span>
-              <div>
-                <strong>{{ alert.get_severity_display }}</strong>
-                <p>{{ alert.message }}</p>
+          </header>
+          <div class="card-body">
+            {% for alert in latest_alerts %}
+              <div class="alert-row">
+                <span class="severity-dot severity-{{ alert.severity }}">
+                </span>
+                <div>
+                  <strong>{{ alert.get_severity_display }}</strong>
+                  <p>{{ alert.message }}</p>
+                </div>
               </div>
-            </div>
-          {% empty %}
-            <p class="empty-state">Nenhum alerta.</p>
-          {% endfor %}
+            {% empty %}
+              <p class="empty-state">Nenhum alerta.</p>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
