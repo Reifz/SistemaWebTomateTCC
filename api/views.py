@@ -1,42 +1,67 @@
-from rest_framework import generics, status
+from django.db import transaction
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.authentication import TokenAuthentication
 
 from alerts.models import Alert
+from captures.models import Capture
 from dashboard.services import resumo_dashboard
+from sensors.models import EnvironmentalReading
+
 from .serializers import (
     AlertaSerializer,
+    CapturaSerializer,
+    EntradaCapturaSerializer,
+    EntradaPredicaoSerializer,
     PredicaoSerializer,
 )
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class CapturaView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def post(self, request):
-        # TODO: implementar a recepção dos dados enviados pelo ESP32-CAM.
-        # Etapas esperadas:
-        # 1. autenticar o dispositivo e obter seu usuário pelo token;
-        # 2. validar imagem, temperatura e umidade com EntradaCapturaSerializer;
-        # 3. criar Capture com origem Capture.Origin.ESP32;
-        # 4. criar EnvironmentalReading ligada à captura;
-        # 5. iniciar a inferência em uma tarefa assíncrona;
-        # 6. responder com CapturaSerializer e HTTP 201.
-        return Response(
-            {"detail": "Integração com o ESP32-CAM ainda não implementada."},
-            status=status.HTTP_501_NOT_IMPLEMENTED,
-        )
+        serializer = EntradaCapturaSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        dados = serializer.validated_data
+
+        with transaction.atomic():
+            captura = Capture.objects.create(
+                user=request.user,
+                image=dados["image"],
+                observation=dados.get("observation", ""),
+                origin=Capture.Origin.ESP32,
+                status=Capture.Status.PENDING,
+            )
+
+            EnvironmentalReading.objects.create(
+                capture=captura,
+                temperature=dados["temperature"],
+                humidity=dados["humidity"],
+            )
+
+        resposta = CapturaSerializer(captura)
+        return Response(resposta.data, status=status.HTTP_201_CREATED)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class PredicaoView(APIView):
     def post(self, request):
-        # TODO: implementar somente se a inferência precisar ser iniciada por uma
-        # requisição separada. Se ela começar automaticamente em CapturaView,
-        # remova esta view, sua rota e EntradaPredicaoSerializer.
         return Response(
             {"detail": "Inferência do modelo ainda não implementada."},
             status=status.HTTP_501_NOT_IMPLEMENTED,
         )
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ResumoDashboardView(APIView):
     def get(self, request):
         resumo = resumo_dashboard(request.user)
@@ -59,6 +84,7 @@ class ResumoDashboardView(APIView):
         return Response(resumo)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ListaAlertasView(generics.ListAPIView):
     serializer_class = AlertaSerializer
 
