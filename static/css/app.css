@@ -190,8 +190,130 @@ body {
   font-size: 1.9rem;
   margin-top: 0.35rem;
 }
+.metric-card-com-header {
+  overflow: hidden;
+  padding: 0;
+}
+.metric-card-com-header .card-header,
+.content-card-com-header .card-header {
+  background: #f7faf8;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 0.9rem 1.15rem;
+}
+.metric-card-body {
+  padding: 0.75rem 1.15rem 1rem;
+}
+.metric-card-com-header strong {
+  margin-top: 0;
+}
+.content-card.content-card-com-header {
+  overflow: hidden;
+  padding: 0;
+}
+.content-card-com-header .card-header.section-heading {
+  align-items: center;
+  margin-bottom: 0;
+}
+.content-card-com-header .card-header p {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.content-card-com-header .card-header h1,
+.content-card-com-header .card-header h2 {
+  margin: 0;
+}
+.content-card-com-header .card-body {
+  padding: 1.15rem;
+}
+.content-card-com-header .table {
+  margin-bottom: 0;
+}
+.content-card-com-header .chart-empty {
+  margin-top: 0;
+}
 .content-card {
   padding: 1.4rem;
+}
+.capture-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.capture-card-header {
+  background: #f7faf8;
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+}
+.capture-card-header h2 {
+  margin: 0;
+}
+.capture-card-body {
+  flex: 1;
+  padding: 1.25rem;
+}
+.capture-summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.capture-image {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+.capture-metadata {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+.capture-metadata > div {
+  background: #f7faf8;
+  border-radius: 0.6rem;
+  padding: 0.8rem;
+}
+.capture-metadata .capture-metadata-wide {
+  grid-column: 1 / -1;
+}
+.capture-metadata dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+.capture-metadata dd {
+  margin: 0;
+}
+.capture-card-stack {
+  display: grid;
+  gap: 1.5rem;
+  grid-auto-rows: minmax(0, 1fr);
+}
+.environment-values {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.environment-values div {
+  border-left: 3px solid var(--green-600);
+  padding-left: 0.85rem;
+}
+.environment-values strong,
+.environment-values span {
+  display: block;
+}
+.environment-values strong {
+  font-size: 1.2rem;
+}
+.environment-values span {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 .content-card h2,
 .section-heading h2 {

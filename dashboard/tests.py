@@ -49,6 +49,8 @@ class DashboardTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="card-header"', count=4)
+        self.assertContains(response, 'class="card-header section-heading"', count=2)
         self.assertContains(response, "Monitoramento inteligente")
         self.assertContains(response, "font-awesome/6.7.2/css/all.min.css")
         self.assertContains(response, 'class="fa-solid fa-house nav-link-icon"')
@@ -92,7 +94,9 @@ class DashboardTests(TestCase):
         for rota in ("capture_list", "history", "alert_list", "user_list"):
             with self.subTest(rota=rota):
                 resposta = self.client.get(reverse(rota))
-                self.assertContains(resposta, 'class="content-card p-0"')
+                self.assertContains(resposta, 'class="content-card content-card-com-header"')
+                self.assertContains(resposta, 'class="card-header"')
+                self.assertContains(resposta, 'class="card-body p-0 table-responsive"')
 
     def test_dashboard_renders_for_authenticated_user(self):
         user = get_user_model().objects.create_user(email="dash@example.com", password="test-pass-123")
@@ -101,6 +105,14 @@ class DashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Dashboard")
         self.assertContains(response, 'class="btn btn-success btn-sm"')
+
+    def test_cards_com_cabecalho_nao_reintroduzem_padding_externo(self):
+        css_principal = (settings.BASE_DIR / "static/css/app.css").read_text(encoding="utf-8")
+        css_responsivo = (settings.BASE_DIR / "static/css/responsivo.css").read_text(encoding="utf-8")
+
+        self.assertIn(".content-card.content-card-com-header {", css_principal)
+        self.assertIn(".content-card.content-card-com-header {", css_responsivo)
+        self.assertIn(".content-card-com-header .chart-empty", css_principal)
 
     def test_operational_pages_render_for_administrator(self):
         user = get_user_model().objects.create_user(email="staff@example.com", password="test-pass-123", is_staff=True)

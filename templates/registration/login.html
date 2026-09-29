@@ -3,11 +3,11 @@
 {% block content %}
   <div class="row justify-content-center py-lg-5">
     <div class="col-md-6 col-lg-4">
-      <div class="content-card">
-        <div class="card-header text-center mb-4 bg-success text-white py-3 rounded-top">
+      <div class="content-card content-card-com-header">
+        <header class="card-header text-center bg-success text-white py-3">
           <h1 class="h3">Tomato Monitor</h1>
-        </div>
-        <form method="post">
+        </header>
+        <form method="post" class="card-body">
           {% csrf_token %}
           {% if form.errors %}
             <div class="alert alert-danger">E-mail ou senha inválidos.</div>

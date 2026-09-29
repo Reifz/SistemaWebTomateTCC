@@ -44,8 +44,9 @@
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card p-0">
-      <div class="table-responsive">
+    <div class="content-card content-card-com-header">
+      <header class="card-header"><h2>Usuários cadastrados</h2></header>
+      <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
           <thead>
             <tr>
@@ -62,7 +63,7 @@
             {% for account in page_obj %}
               <tr>
                 <td>
-                  <strong>{{ account.get_full_name|default:'—' }}</strong>
+                  <strong>{{ account.get_full_name|default:'Não informado' }}</strong>
                 </td>
                 <td>{{ account.email }}</td>
                 <td>

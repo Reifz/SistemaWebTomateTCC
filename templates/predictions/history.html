@@ -86,8 +86,9 @@
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card p-0">
-      <div class="table-responsive">
+    <div class="content-card content-card-com-header">
+      <header class="card-header"><h2>Análises realizadas</h2></header>
+      <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
           <thead>
             <tr>
@@ -116,7 +117,7 @@
                 <td>
                   {% for alert in prediction.alerts.all %}
                     <span class="badge severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
-                  {% empty %}—{% endfor %}
+                  {% empty %}Nenhum{% endfor %}
                 </td>
               </tr>
             {% empty %}

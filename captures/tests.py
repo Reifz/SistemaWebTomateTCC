@@ -34,8 +34,10 @@ class CaptureViewTests(TestCase):
         self.assertContains(resposta, "painel-cabecalho")
         self.assertContains(resposta, "painel-conteudo")
         self.assertContains(resposta, 'class="btn btn-light"')
-        self.assertContains(resposta, 'class="content-card mb-3"', count=2)
-        self.assertContains(resposta, '<div class="content-card">', count=1)
+        self.assertContains(resposta, 'class="content-card capture-card', count=3)
+        self.assertContains(resposta, 'class="capture-card-header"', count=3)
+        self.assertContains(resposta, "Dados da captura")
+        self.assertContains(resposta, "Não informada")
 
     def test_filtros_usam_layout_flexivel_e_botao_em_largura_completa(self):
         self.user.is_staff = True
