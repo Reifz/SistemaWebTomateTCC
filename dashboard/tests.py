@@ -15,7 +15,16 @@ from .services import resumo_dashboard
 
 
 class DashboardTests(TestCase):
+    """
+    Classe de testes unitários e de integração para validação das views,
+    regra de negócio e renderização de templates do Dashboard.
+    """
+
     def criar_predicao(self, usuario, classe, confianca, umidade, severidade=None):
+        """
+        Método auxiliar para criação encadeada de objetos no banco de dados 
+        (Captura -> Leitura Ambiental -> Predição -> Alerta opcional).
+        """
         captura = Capture.objects.create(user=usuario, status=Capture.Status.PROCESSED)
         EnvironmentalReading.objects.create(capture=captura, temperature=25, humidity=umidade)
         predicao = Prediction.objects.create(
@@ -36,6 +45,10 @@ class DashboardTests(TestCase):
         return captura, predicao
 
     def test_templates_nao_possuem_quebras_de_linha_literais(self):
+        """
+        Garante padronização de arquivos HTML: sem BOM (Byte Order Mark),
+        sem caracteres escapados de quebra de linha do Windows (`r`n) e sem linhas em branco no final.
+        """
         for arquivo in (settings.BASE_DIR / "templates").rglob("*.html"):
             with self.subTest(arquivo=arquivo.name):
                 bytes_do_arquivo = arquivo.read_bytes()
@@ -45,6 +58,10 @@ class DashboardTests(TestCase):
                 self.assertFalse(conteudo.endswith("\n\n"))
 
     def test_home_renders_after_login(self):
+        """
+        Verifica se a página inicial renderiza corretamente após o login
+        e contém os elementos de layout básicos (cards, fontes de ícones e navegação).
+        """
         user = get_user_model().objects.create_user(email="home@example.com", password="test-pass-123")
         self.client.force_login(user)
         response = self.client.get(reverse("home"))
@@ -56,6 +73,9 @@ class DashboardTests(TestCase):
         self.assertContains(response, 'class="fa-solid fa-house nav-link-icon"')
 
     def test_navbar_administrativo_exibe_icones_font_awesome(self):
+        """
+        Valida se os ícones do menu de navegação administrativa (staff) são renderizados corretamente.
+        """
         usuario = get_user_model().objects.create_user(
             email="icones@example.com",
             password="test-pass-123",
@@ -70,6 +90,9 @@ class DashboardTests(TestCase):
                 self.assertContains(resposta, classe)
 
     def test_telas_internas_usam_paineis_de_cabecalho_e_conteudo(self):
+        """
+        Garante que todas as rotas operacionais/internas contêm as estruturas de layout base.
+        """
         usuario = get_user_model().objects.create_user(
             email="paineis@example.com",
             password="test-pass-123",
@@ -84,6 +107,9 @@ class DashboardTests(TestCase):
                 self.assertContains(resposta, "painel-conteudo")
 
     def test_listagens_usam_card_interno_para_tabela(self):
+        """
+        Verifica a presença das classes de tabela responsiva dentro de cards padronizados nas listagens.
+        """
         usuario = get_user_model().objects.create_user(
             email="tabelas@example.com",
             password="test-pass-123",
@@ -99,6 +125,9 @@ class DashboardTests(TestCase):
                 self.assertContains(resposta, 'class="card-body p-0 table-responsive"')
 
     def test_dashboard_renders_for_authenticated_user(self):
+        """
+        Métricas e botões básicos do Dashboard para um usuário logado comum.
+        """
         user = get_user_model().objects.create_user(email="dash@example.com", password="test-pass-123")
         self.client.force_login(user)
         response = self.client.get(reverse("dashboard"))
@@ -107,6 +136,9 @@ class DashboardTests(TestCase):
         self.assertContains(response, 'class="btn btn-success btn-sm"')
 
     def test_cards_com_cabecalho_nao_reintroduzem_padding_externo(self):
+        """
+        Testa a presença de seletores CSS essenciais nos arquivos de estilo da aplicação.
+        """
         css_principal = (settings.BASE_DIR / "static/css/app.css").read_text(encoding="utf-8")
         css_responsivo = (settings.BASE_DIR / "static/css/responsivo.css").read_text(encoding="utf-8")
 
@@ -115,6 +147,9 @@ class DashboardTests(TestCase):
         self.assertIn(".content-card-com-header .chart-empty", css_principal)
 
     def test_operational_pages_render_for_administrator(self):
+        """
+        Confirma se todas as rotas operacionais retornam HTTP 200 para um usuário administrador.
+        """
         user = get_user_model().objects.create_user(email="staff@example.com", password="test-pass-123", is_staff=True)
         self.client.force_login(user)
         for route in ("home", "dashboard", "capture_list", "capture_create", "history", "alert_list", "user_list"):
@@ -122,6 +157,9 @@ class DashboardTests(TestCase):
                 self.assertEqual(self.client.get(reverse(route)).status_code, 200)
 
     def test_dashboard_vazio_exibe_mensagens_no_lugar_dos_graficos(self):
+        """
+        Garante que mensagens de estado vazio (empty states) são exibidas quando não há dados cadastrados.
+        """
         usuario = get_user_model().objects.create_user(email="vazio@example.com", password="test-pass-123")
         self.client.force_login(usuario)
         resposta = self.client.get(reverse("dashboard"))
@@ -129,6 +167,9 @@ class DashboardTests(TestCase):
         self.assertContains(resposta, "Ainda não há leituras ambientais")
 
     def test_dashboard_administrativo_usa_filtro_em_largura_completa(self):
+        """
+        Valida os componentes do formulário de filtro exclusivo da visão administrativa.
+        """
         usuario = get_user_model().objects.create_user(
             email="filtro-dashboard@example.com",
             password="test-pass-123",
@@ -144,6 +185,9 @@ class DashboardTests(TestCase):
         self.assertContains(resposta, ">Filtrar</button>")
 
     def test_estatisticas_de_classe_calculam_media_e_top_cinco(self):
+        """
+        Testa o cálculo matemático do serviço `resumo_dashboard`: média de confiança e ranking de classes.
+        """
         usuario = get_user_model().objects.create_user(email="classes@example.com", password="test-pass-123")
         self.criar_predicao(usuario, "Tomato___healthy", 80, 50)
         self.criar_predicao(usuario, "Tomato___healthy", 90, 55)
@@ -157,6 +201,10 @@ class DashboardTests(TestCase):
         self.assertEqual(contexto["top_classes"][0]["predicted_class"], "Tomato___healthy")
 
     def test_alertas_temporais_tem_trinta_dias_e_zeros(self):
+        """
+        Garante que o histórico temporal de alertas gera um intervalo fixo de 30 dias,
+        preenchendo com zero os dias sem registro.
+        """
         usuario = get_user_model().objects.create_user(email="alertas-tempo@example.com", password="test-pass-123")
         _, predicao = self.criar_predicao(usuario, "Tomato___Late_blight", 90, 85, Alert.Severity.CRITICAL)
         alerta = predicao.alerts.get()
@@ -169,6 +217,9 @@ class DashboardTests(TestCase):
         self.assertTrue(any(item["critica"] == 0 for item in contexto["alerts_timeline"]))
 
     def test_novos_dados_respeitam_isolamento_do_usuario(self):
+        """
+        Valida a regra de isolamento multi-tenant: os dados de um usuário não podem vazar no resumo de outro.
+        """
         usuario = get_user_model().objects.create_user(email="isolado@example.com", password="test-pass-123")
         outro = get_user_model().objects.create_user(email="outro-dashboard@example.com", password="test-pass-123")
         self.criar_predicao(usuario, "Tomato___healthy", 88, 50)
@@ -181,6 +232,9 @@ class DashboardTests(TestCase):
         self.assertFalse(contexto["alerts_timeline_has_data"])
 
     def test_dashboard_renderiza_novos_componentes_e_estados_vazios(self):
+        """
+        Verifica se os componentes específicos e o script JS dos gráficos do Dashboard estão na resposta da requisição.
+        """
         usuario = get_user_model().objects.create_user(email="graficos-vazios@example.com", password="test-pass-123")
         self.client.force_login(usuario)
 
