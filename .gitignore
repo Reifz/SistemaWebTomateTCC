@@ -17,3 +17,10 @@ htmlcov/
 .idea/
 .vscode/
 *.log
+*.md
+docs/
+evidencias/
+fotos_nao_controladas/
+AGENTS*
+.agents/
+.codex/

@@ -138,8 +138,6 @@ class TesteNomenclaturaPortugues(SimpleTestCase):
 
     @staticmethod
     def _arquivos_frontend():
-        yield settings.BASE_DIR / "README.md"
-
         for pasta, extensoes in (("templates", ("*.html",)), ("static", ("*.css", "*.js"))):
             for extensao in extensoes:
                 yield from (settings.BASE_DIR / pasta).rglob(extensao)

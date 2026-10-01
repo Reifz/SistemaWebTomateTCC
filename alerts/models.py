@@ -4,17 +4,21 @@ from django.db import models
 
 class Alerta(models.Model):
     class Tipo(models.TextChoices):
-        
         FITOSSANITARIO = "fitossanitario", "Fitossanitário"
+
         BAIXA_CONFIANCA = "baixa_confianca", "Baixa confiança"
+
         AMBIENTAL = "ambiental", "Ambiental"
+
         CRITICO = "critico", "Crítico"
 
     class Severidade(models.TextChoices):
-        
         BAIXA = "baixa", "Baixa"
+
         MEDIA = "media", "Média"
+
         ALTA = "alta", "Alta"
+
         CRITICA = "critica", "Crítica"
 
     captura = models.ForeignKey(
