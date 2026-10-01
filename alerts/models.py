@@ -14,11 +14,8 @@ class Alerta(models.Model):
 
     class Severidade(models.TextChoices):
         BAIXA = "baixa", "Baixa"
-
         MEDIA = "media", "Média"
-
         ALTA = "alta", "Alta"
-
         CRITICA = "critica", "Crítica"
 
     captura = models.ForeignKey(
