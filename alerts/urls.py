@@ -1,4 +1,7 @@
 from django.urls import path
 from . import views
 
-urlpatterns = [path("", views.alert_list, name="alert_list"), path("<int:pk>/read/", views.mark_read, name="alert_read")]
+urlpatterns = [
+    path("", views.listar_alertas, name="lista_alertas"),
+    path("<int:id_alerta>/read/", views.marcar_como_visualizado, name="visualizar_alerta"),
+]

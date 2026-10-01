@@ -1,8 +1,9 @@
 from django.contrib import admin
-from .models import EnvironmentalReading
+from .models import LeituraAmbiental
 
 
-@admin.register(EnvironmentalReading)
-class EnvironmentalReadingAdmin(admin.ModelAdmin):
-    list_display = ("capture", "temperature", "humidity", "measured_at")
-    list_filter = ("measured_at",)
+@admin.register(LeituraAmbiental)
+class AdministracaoLeituraAmbiental(admin.ModelAdmin):
+    list_display = ("captura", "temperatura", "umidade", "medida_em")
+
+    list_filter = ("medida_em",)

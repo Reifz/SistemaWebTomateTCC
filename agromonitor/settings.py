@@ -52,7 +52,7 @@ TEMPLATES = [{
         "django.template.context_processors.request",
         "django.contrib.auth.context_processors.auth",
         "django.contrib.messages.context_processors.messages",
-        "alerts.context_processors.unread_alert_count",
+        "alerts.context_processors.quantidade_alertas_nao_lidos",
         "accounts.context_processors.resumo_dados_administrativos",
     ]},
 }]
@@ -87,10 +87,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 RESULTS_ROOT = BASE_DIR / "resultados"
+MODELS_ROOT = BASE_DIR / "models"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "login"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

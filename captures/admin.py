@@ -1,9 +1,11 @@
 from django.contrib import admin
-from .models import Capture
+from .models import Captura
 
 
-@admin.register(Capture)
-class CaptureAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "origin", "status", "captured_at")
-    list_filter = ("origin", "status", "captured_at")
-    search_fields = ("user__email", "observation")
+@admin.register(Captura)
+class AdministracaoCaptura(admin.ModelAdmin):
+    list_display = ("id", "usuario", "origem", "status", "capturada_em")
+
+    list_filter = ("origem", "status", "capturada_em")
+
+    search_fields = ("usuario__email", "observacao")

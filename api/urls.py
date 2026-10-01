@@ -1,18 +1,20 @@
 from django.urls import path
 from .views import (
-    CapturaView,
-    ListaAlertasView,
-    PredicaoView,
-    ResumoDashboardView,
+    VisaoCaptura,
+    VisaoArtefatoPredicao,
+    VisaoListaAlertas,
+    VisaoPredicao,
+    VisaoResumoPainel,
 )
 
 urlpatterns = [
-    # Endpoint que o ESP32-CAM deverá chamar para enviar imagem e telemetria.
-    path("captures/", CapturaView.as_view(), name="api_capture"),
-    # Pode ser chamado pelo cliente após criar a captura ou substituído por uma
-    # tarefa automática iniciada em CapturaView.
-    path("predictions/", PredicaoView.as_view(), name="api_prediction"),
-    # Os endpoints abaixo são de leitura para o dashboard/aplicações clientes.
-    path("dashboard/summary/", ResumoDashboardView.as_view(), name="api_dashboard_summary"),
-    path("alerts/", ListaAlertasView.as_view(), name="api_alerts"),
+    path("captures/", VisaoCaptura.as_view(), name="api_captura"),
+    path("predictions/", VisaoPredicao.as_view(), name="api_predicao"),
+    path(
+        "predictions/<int:id_predicao>/artifacts/<str:tipo_artefato>/",
+        VisaoArtefatoPredicao.as_view(),
+        name="api_artefato_predicao",
+    ),
+    path("dashboard/summary/", VisaoResumoPainel.as_view(), name="api_resumo_painel"),
+    path("alerts/", VisaoListaAlertas.as_view(), name="api_alertas"),
 ]

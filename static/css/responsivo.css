@@ -1,5 +1,5 @@
 /* Área exibida quando um gráfico ainda não possui dados. */
-.chart-empty {
+.grafico-vazio {
   align-items: center;
   background: #f7faf8;
   border: 1px dashed #cbdad1;
@@ -19,7 +19,7 @@
     display: block;
     margin-left: auto;
   }
-  .filter-panel .row > * {
+  .painel-filtro .row > * {
     flex: 0 0 100%;
     max-width: 100%;
     width: 100%;
@@ -31,13 +31,13 @@
   body {
     overflow-x: hidden;
   }
-  .content-card {
+  .cartao-conteudo {
     padding: 1rem;
   }
-  .content-card.content-card-com-header {
+  .cartao-conteudo.cartao-conteudo-com-cabecalho {
     padding: 0;
   }
-  .chart-empty {
+  .grafico-vazio {
     min-height: 150px;
   }
   .table-responsive .table {

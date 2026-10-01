@@ -1,9 +1,24 @@
 from django.contrib import admin
-from .models import Prediction
+from .models import Predicao
 
 
-@admin.register(Prediction)
-class PredictionAdmin(admin.ModelAdmin):
-    list_display = ("capture", "predicted_class", "confidence", "confidence_status", "predicted_at")
-    list_filter = ("confidence_status", "predicted_class", "predicted_at")
-    search_fields = ("predicted_class", "capture__user__email")
+@admin.register(Predicao)
+class AdministracaoPredicao(admin.ModelAdmin):
+    list_display = (
+        "captura",
+        "classe_prevista",
+        "confianca",
+        "nivel_confianca",
+        "status_preprocessamento",
+        "tempo_inferencia_ms",
+        "prevista_em",
+    )
+
+    list_filter = (
+        "nivel_confianca",
+        "status_preprocessamento",
+        "classe_prevista",
+        "prevista_em",
+    )
+
+    search_fields = ("classe_prevista", "captura__usuario__email")

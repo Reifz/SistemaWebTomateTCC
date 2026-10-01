@@ -1,30 +1,30 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Dashboard | Tomato Monitor{% endblock %}
+{% block title %}Dashboard | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
         <h1>Dashboard</h1>
         <p>Indicadores consolidados do monitoramento.</p>
       </div>
-    <!-- <a class="btn btn-success" href="{% url 'capture_create' %}">Nova captura</a> -->
+    <!-- <a class="btn btn-success" href="{% url 'criar_captura' %}">Nova captura</a> -->
     </div>
     {% if user.is_staff %}
-      <form method="get" class="filter-panel filtros-integrados">
-        <div class="filter-fields">
-          <div class="filter-field">
+      <form method="get" class="painel-filtro filtros-integrados">
+        <div class="campos-filtro">
+          <div class="campo-filtro">
             <label>Visualizar usuário</label>
             <select class="form-select" name="user">
               <option value="">Todos os usuários</option>
-              {% for item in users %}
-                <option value="{{ item.pk }}"
-                        {% if selected_user.pk == item.pk %}selected{% endif %}>{{ item }}</option>
+              {% for usuario in usuarios %}
+                <option value="{{ usuario.pk }}"
+                        {% if usuario_selecionado.pk == usuario.pk %}selected{% endif %}>{{ usuario }}</option>
               {% endfor %}
             </select>
           </div>
         </div>
-        <div class="filter-actions">
+        <div class="acoes-filtro">
           <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
         </div>
       </form>
@@ -33,53 +33,53 @@
   <section class="painel-pagina painel-conteudo">
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho">
           <header class="card-header">Total de capturas</header>
-          <div class="metric-card-body"><strong>{{ total_captures }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ total_capturas }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho">
           <header class="card-header">Processadas</header>
-          <div class="metric-card-body"><strong>{{ processed_captures }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ capturas_processadas }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header warning">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho aviso">
           <header class="card-header">Alertas ativos</header>
-          <div class="metric-card-body"><strong>{{ active_alerts }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ alertas_ativos }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header danger">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho perigo">
           <header class="card-header">Doenças detectadas</header>
-          <div class="metric-card-body"><strong>{{ diseases_detected }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ doencas_detectadas }}</strong></div>
         </div>
       </div>
     </div>
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
-        <div class="content-card content-card-com-header h-100">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
           <header class="card-header"><h2>Distribuição de classes</h2></header>
           <div class="card-body">
-          {% if distribution %}
-            <canvas id="classChart">
+          {% if distribuicao %}
+            <canvas id="graficoClasses">
             </canvas>
           {% else %}
-            <div class="chart-empty">Ainda não há análises para exibir.</div>
+            <div class="grafico-vazio">Ainda não há análises para exibir.</div>
           {% endif %}
           </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="content-card content-card-com-header h-100">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
           <header class="card-header"><h2>Temperatura e umidade</h2></header>
           <div class="card-body">
-          {% if readings %}
-            <canvas id="environmentChart">
+          {% if leituras %}
+            <canvas id="graficoAmbiente">
             </canvas>
           {% else %}
-            <div class="chart-empty">Ainda não há leituras ambientais.</div>
+            <div class="grafico-vazio">Ainda não há leituras ambientais.</div>
           {% endif %}
           </div>
         </div>
@@ -87,25 +87,25 @@
     </div>
     <div class="row g-4 mb-4">
       <div class="col-lg-6">
-        <div class="content-card content-card-com-header h-100">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
           <header class="card-header"><h2>Confiança média por classe</h2></header>
           <div class="card-body">
-          {% if class_statistics %}
-            <div class="chart-container chart-container-tall"><canvas id="confidenceChart"></canvas></div>
+          {% if estatisticas_classes %}
+            <div class="recipiente-grafico recipiente-grafico-alto"><canvas id="graficoConfianca"></canvas></div>
           {% else %}
-            <div class="chart-empty">Ainda não há previsões para calcular a confiança média.</div>
+            <div class="grafico-vazio">Ainda não há previsões para calcular a confiança média.</div>
           {% endif %}
           </div>
         </div>
       </div>
       <div class="col-lg-6">
-        <div class="content-card content-card-com-header h-100">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
           <header class="card-header"><h2>Alertas por severidade nos últimos 30 dias</h2></header>
           <div class="card-body">
-          {% if alerts_timeline_has_data %}
-            <div class="chart-container"><canvas id="alertsTimelineChart"></canvas></div>
+          {% if linha_tempo_alertas_possui_dados %}
+            <div class="recipiente-grafico"><canvas id="graficoLinhaTempoAlertas"></canvas></div>
           {% else %}
-            <div class="chart-empty">Nenhum alerta registrado nos últimos 30 dias.</div>
+            <div class="grafico-vazio">Nenhum alerta registrado nos últimos 30 dias.</div>
           {% endif %}
           </div>
         </div>
@@ -113,21 +113,21 @@
     </div>
     <div class="row g-4 mb-4">
       <div class="col-12">
-        <div class="content-card content-card-com-header h-100">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
           <header class="card-header"><h2>5 classes mais detectadas</h2></header>
           <div class="card-body p-0 table-responsive">
             <table class="table mb-0">
               <thead><tr><th>#</th><th>Classe</th><th>Total</th><th>Confiança média</th></tr></thead>
               <tbody>
-                {% for item in top_classes %}
+                {% for item in principais_classes %}
                   <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ item.predicted_class }}</td>
+                    <td>{{ item.classe_prevista }}</td>
                     <td>{{ item.total }}</td>
                     <td>{{ item.confianca_media|floatformat:2 }}%</td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="4" class="empty-state">Nenhuma classe detectada.</td></tr>
+                  <tr><td colspan="4" class="estado-vazio">Nenhuma classe detectada.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -137,10 +137,10 @@
     </div>
     <div class="row g-4">
       <div class="col-lg-7">
-        <div class="content-card content-card-com-header h-100">
-          <header class="card-header section-heading">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
+          <header class="card-header cabecalho-secao">
             <h2>Últimas capturas</h2>
-            <a class="btn btn-success btn-sm" href="{% url 'capture_list' %}">Ver todas</a>
+            <a class="btn btn-success btn-sm" href="{% url 'lista_capturas' %}">Ver todas</a>
           </header>
           <div class="card-body p-0 table-responsive">
             <table class="table">
@@ -155,19 +155,19 @@
                 </tr>
               </thead>
               <tbody>
-                {% for capture in latest_captures %}
+                {% for captura in ultimas_capturas %}
                   <tr>
-                    <td>{{ capture.id }}</td>
-                    <td>{{ capture.captured_at|date:'d/m/Y H:i' }}</td>
-                    <td>{{ capture.get_origin_display }}</td>
-                    <td>{{ capture.get_status_display }}</td>
+                    <td>{{ captura.id }}</td>
+                    <td>{{ captura.capturada_em|date:'d/m/Y H:i' }}</td>
+                    <td>{{ captura.rotulo_origem }}</td>
+                    <td>{{ captura.get_status_display }}</td>
                     <td>
-                      <a class="btn btn-success btn-sm" href="{% url 'capture_detail' capture.pk %}">Ver</a>
+                      <a class="btn btn-success btn-sm" href="{% url 'detalhar_captura' captura.pk %}">Ver</a>
                     </td>
                   </tr>
                 {% empty %}
                   <tr>
-                    <td colspan="5" class="empty-state">Nenhuma captura.</td>
+                    <td colspan="5" class="estado-vazio">Nenhuma captura.</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -176,36 +176,36 @@
         </div>
       </div>
       <div class="col-lg-5">
-        <div class="content-card content-card-com-header h-100">
-          <header class="card-header section-heading">
+        <div class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
+          <header class="card-header cabecalho-secao">
             <h2>Últimos alertas</h2>
-            <a class="btn btn-success btn-sm" href="{% url 'alert_list' %}">Ver todos</a>
+            <a class="btn btn-success btn-sm" href="{% url 'lista_alertas' %}">Ver todos</a>
           </header>
           <div class="card-body">
-            {% for alert in latest_alerts %}
-              <div class="alert-row">
-                <span class="severity-dot severity-{{ alert.severity }}">
+            {% for alerta in ultimos_alertas %}
+              <div class="linha-alerta">
+                <span class="ponto-severidade severidade-{{ alerta.severidade }}">
                 </span>
                 <div>
-                  <strong>{{ alert.get_severity_display }}</strong>
-                  <p>{{ alert.message }}</p>
+                  <strong>{{ alerta.get_severidade_display }}</strong>
+                  <p>{{ alerta.mensagem }}</p>
                 </div>
               </div>
             {% empty %}
-              <p class="empty-state">Nenhum alerta.</p>
+              <p class="estado-vazio">Nenhum alerta.</p>
             {% endfor %}
           </div>
         </div>
       </div>
     </div>
-    {{ distribution|json_script:'distribution-data' }}
-    {{ readings|json_script:'readings-data' }}
-    {{ class_statistics|json_script:'class-statistics-data' }}
-    {{ alerts_timeline|json_script:'alerts-timeline-data' }}
+    {{ distribuicao|json_script:'dados-distribuicao' }}
+    {{ leituras|json_script:'dados-leituras' }}
+    {{ estatisticas_classes|json_script:'dados-estatisticas-classes' }}
+    {{ linha_tempo_alertas|json_script:'dados-linha-tempo-alertas' }}
   </section>
 {% endblock %}
 {% block scripts %}
-  {% if distribution or readings or class_statistics or alerts_timeline_has_data %}
+  {% if distribuicao or leituras or estatisticas_classes or linha_tempo_alertas_possui_dados %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js">
     </script>
   {% endif %}

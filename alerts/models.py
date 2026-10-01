@@ -2,39 +2,71 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
-class Alert(models.Model):
-    class Type(models.TextChoices):
-        PHYTOSANITARY = "fitossanitario", "Fitossanitário"
-        LOW_CONFIDENCE = "baixa_confianca", "Baixa confiança"
-        ENVIRONMENTAL = "ambiental", "Ambiental"
-        CRITICAL = "critico", "Crítico"
+class Alerta(models.Model):
+    class Tipo(models.TextChoices):
+        FITOSSANITARIO = "fitossanitario", "Fitossanitário"
 
-    class Severity(models.TextChoices):
-        LOW = "baixa", "Baixa"
-        MEDIUM = "media", "Média"
-        HIGH = "alta", "Alta"
-        CRITICAL = "critica", "Crítica"
+        BAIXA_CONFIANCA = "baixa_confianca", "Baixa confiança"
 
-    capture = models.ForeignKey("captures.Capture", on_delete=models.CASCADE, related_name="alerts", null=True, blank=True)
-    prediction = models.ForeignKey("predictions.Prediction", on_delete=models.CASCADE, related_name="alerts", null=True, blank=True)
-    type = models.CharField("tipo", max_length=20, choices=Type.choices, db_index=True)
-    severity = models.CharField("severidade", max_length=8, choices=Severity.choices, db_index=True)
-    message = models.TextField("mensagem")
-    created_at = models.DateTimeField("data/hora", auto_now_add=True, db_index=True)
-    viewed = models.BooleanField("visualizado", default=False, db_index=True)
+        AMBIENTAL = "ambiental", "Ambiental"
+
+        CRITICO = "critico", "Crítico"
+
+    class Severidade(models.TextChoices):
+        BAIXA = "baixa", "Baixa"
+
+        MEDIA = "media", "Média"
+
+        ALTA = "alta", "Alta"
+
+        CRITICA = "critica", "Crítica"
+
+    captura = models.ForeignKey(
+        "captures.Captura",
+        on_delete=models.CASCADE,
+        related_name="alertas",
+        null=True,
+        blank=True,
+        db_column="capture_id",
+    )
+
+    predicao = models.ForeignKey(
+        "predictions.Predicao",
+        on_delete=models.CASCADE,
+        related_name="alertas",
+        null=True,
+        blank=True,
+        db_column="prediction_id",
+    )
+
+    tipo = models.CharField("tipo", max_length=20, choices=Tipo.choices, db_index=True, db_column="type")
+
+    severidade = models.CharField(
+        "severidade", max_length=8, choices=Severidade.choices, db_index=True, db_column="severity"
+    )
+
+    mensagem = models.TextField("mensagem", db_column="message")
+
+    criado_em = models.DateTimeField("data/hora", auto_now_add=True, db_index=True, db_column="created_at")
+
+    visualizado = models.BooleanField("visualizado", default=False, db_index=True, db_column="viewed")
 
     class Meta:
-        ordering = ("-created_at",)
+        db_table = "alerts_alert"
+
+        ordering = ("-criado_em",)
+
         verbose_name = "alerta"
+
         verbose_name_plural = "alertas"
 
     def clean(self):
-        if not self.capture_id and not self.prediction_id:
+        if not self.captura_id and not self.predicao_id:
             raise ValidationError("O alerta deve estar ligado a uma captura ou predição.")
 
     @property
-    def owner(self):
-        return self.capture.user if self.capture_id else self.prediction.capture.user
+    def proprietario(self):
+        return self.captura.usuario if self.captura_id else self.predicao.captura.usuario
 
     def __str__(self):
-        return f"{self.get_type_display()} - {self.get_severity_display()}"
+        return f"{self.get_tipo_display()} - {self.get_severidade_display()}"

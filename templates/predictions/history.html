@@ -1,47 +1,47 @@
 {% extends 'base.html' %}
-{% block title %}Histórico | Tomato Monitor{% endblock %}
+{% block title %}Histórico | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
         <h1>Histórico de Analises</h1>
         <p>Resultados e níveis de confiança.</p>
       </div>
     </div>
-    <form method="get" class="filter-panel filtros-integrados">
-      <div class="filter-fields filter-fields-many">
-        <div class="filter-field filter-field-search">
+    <form method="get" class="painel-filtro filtros-integrados">
+      <div class="campos-filtro muitos-campos-filtro">
+        <div class="campo-filtro campo-filtro-pesquisa">
           <label>Pesquisar</label>
           <input class="form-control"
                  name="q"
                  value="{{ request.GET.q }}"
                  placeholder="Classe ou observação">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>De</label>
           <input class="form-control"
                  type="date"
                  name="date_from"
                  value="{{ request.GET.date_from }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Até</label>
           <input class="form-control"
                  type="date"
                  name="date_to"
                  value="{{ request.GET.date_to }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Classe</label>
           <select class="form-select" name="class">
             <option value="">Todas</option>
-            {% for item in classes %}
-              <option value="{{ item }}"
-                      {% if request.GET.class == item %}selected{% endif %}>{{ item }}</option>
+            {% for classe in classes %}
+              <option value="{{ classe }}"
+                      {% if request.GET.class == classe %}selected{% endif %}>{{ classe }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Severidade</label>
           <select class="form-select" name="severity">
             <option value="">Todas</option>
@@ -55,7 +55,7 @@
                     {% if request.GET.severity == 'critica' %}selected{% endif %}>Crítica</option>
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Confiança</label>
           <select class="form-select" name="confidence">
             <option value="">Todas</option>
@@ -68,25 +68,25 @@
           </select>
         </div>
         {% if user.is_staff %}
-          <div class="filter-field">
+          <div class="campo-filtro">
             <label>Usuário</label>
             <select class="form-select" name="user">
               <option value="">Todos</option>
-              {% for item in users %}
-                <option value="{{ item.pk }}"
-                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% for usuario in usuarios %}
+                <option value="{{ usuario.pk }}"
+                        {% if request.GET.user == usuario.pk|stringformat:'s' %}selected{% endif %}>{{ usuario }}</option>
               {% endfor %}
             </select>
           </div>
         {% endif %}
       </div>
-      <div class="filter-actions">
+      <div class="acoes-filtro">
         <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
       </div>
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card content-card-com-header">
+    <div class="cartao-conteudo cartao-conteudo-com-cabecalho">
       <header class="card-header"><h2>Análises realizadas</h2></header>
       <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
@@ -103,26 +103,26 @@
             </tr>
           </thead>
           <tbody>
-            {% for prediction in page_obj %}
+            {% for predicao in pagina %}
               <tr>
-                <td>{{ prediction.predicted_at|date:'d/m/Y H:i' }}</td>
+                <td>{{ predicao.prevista_em|date:'d/m/Y H:i' }}</td>
                 {% if user.is_staff %}
-                  <td>{{ prediction.capture.user }}</td>
+                  <td>{{ predicao.captura.usuario }}</td>
                 {% endif %}
                 <td>
-                  <a href="{% url 'capture_detail' prediction.capture_id %}">#{{ prediction.capture_id }}</a>
+                  <a href="{% url 'detalhar_captura' predicao.captura_id %}">#{{ predicao.captura_id }}</a>
                 </td>
-                <td>{{ prediction.predicted_class }}</td>
-                <td>{{ prediction.confidence }}% · {{ prediction.get_confidence_status_display }}</td>
+                <td>{{ predicao.classe_prevista }}</td>
+                <td>{{ predicao.confianca }}% · {{ predicao.get_nivel_confianca_display }}</td>
                 <td>
-                  {% for alert in prediction.alerts.all %}
-                    <span class="badge severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+                  {% for alerta in predicao.alertas.all %}
+                    <span class="badge severidade-{{ alerta.severidade }}">{{ alerta.get_severidade_display }}</span>
                   {% empty %}Nenhum{% endfor %}
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty-state">Nenhuma análise encontrada.</td>
+                <td colspan="6" class="estado-vazio">Nenhuma análise encontrada.</td>
               </tr>
             {% endfor %}
           </tbody>

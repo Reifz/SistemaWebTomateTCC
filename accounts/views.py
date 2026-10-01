@@ -16,141 +16,132 @@ Usuario = get_user_model()
 
 
 @staff_member_required
-def user_list(request):
-    """
-    View administrativa de listagem e filtragem de usuários.
-    Restrita a membros da equipe (`is_staff=True`), com suporte a paginação 
-    e preservação dos parâmetros de busca na URL.
-    """
-    users = Usuario.objects.order_by("first_name", "last_name", "email")
-    
-    # Filtro de busca textual por nome, sobrenome ou e-mail
+def listar_usuarios(request):
+    usuarios = Usuario.objects.order_by("first_name", "last_name", "email")
+
     if request.GET.get("q"):
-        q = request.GET["q"]
-        users = users.filter(
-            Q(first_name__icontains=q) | 
-            Q(last_name__icontains=q) | 
-            Q(email__icontains=q)
+        termo_busca = request.GET["q"]
+
+        usuarios = usuarios.filter(
+            Q(first_name__icontains=termo_busca) |
+            Q(last_name__icontains=termo_busca) |
+            Q(email__icontains=termo_busca)
         )
-        
-    # Filtro por tipo de permissão (Administrador vs. Usuário padrão)
+
     if request.GET.get("role") == "admin":
-        users = users.filter(is_staff=True)
+        usuarios = usuarios.filter(is_staff=True)
     elif request.GET.get("role") == "user":
-        users = users.filter(is_staff=False)
-        
-    # Filtro por status de atividade da conta
+        usuarios = usuarios.filter(is_staff=False)
+
     if request.GET.get("status") in ("active", "inactive"):
-        users = users.filter(is_active=request.GET["status"] == "active")
-        
-    # Preserva os parâmetros de consulta ao navegar pelas páginas
-    query = request.GET.copy()
-    query.pop("page", None)
-    
+        usuarios = usuarios.filter(is_active=request.GET["status"] == "active")
+
+    consulta = request.GET.copy()
+
+    consulta.pop("page", None)
+
     return render(
-        request, 
-        "accounts/list.html", 
+        request,
+        "accounts/list.html",
         {
-            "page_obj": Paginator(users, 15).get_page(request.GET.get("page")), 
-            "querystring": query.urlencode()
+            "pagina": Paginator(usuarios, 15).get_page(request.GET.get("page")),
+            "parametros_consulta": consulta.urlencode(),
         }
     )
 
 
 @staff_member_required
-def user_create(request):
-    """View administrativa para cadastro de novos usuários no sistema."""
-    form = FormularioCriacaoUsuario(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        form.save()
+def criar_usuario(request):
+    formulario = FormularioCriacaoUsuario(request.POST or None)
+
+    if request.method == "POST" and formulario.is_valid():
+        formulario.save()
+
         messages.success(request, "Usuário criado com sucesso.")
-        return redirect("user_list")
-        
+
+        return redirect("lista_usuarios")
+
     return render(
-        request, 
-        "accounts/form.html", 
-        {"form": form, "heading": "Novo usuário"}
+        request,
+        "accounts/form.html",
+        {"formulario": formulario, "titulo": "Novo usuário"},
     )
 
 
 @staff_member_required
-def user_edit(request, pk):
-    """View administrativa para edição dos dados e permissões de um usuário existente."""
-    account = get_object_or_404(Usuario, pk=pk)
-    form = FormularioEdicaoUsuario(
-        request.POST or None, 
-        instance=account, 
+def editar_usuario(request, id_usuario):
+    conta = get_object_or_404(Usuario, pk=id_usuario)
+
+    formulario = FormularioEdicaoUsuario(
+        request.POST or None,
+        instance=conta,
         usuario_logado=request.user
     )
-    if request.method == "POST" and form.is_valid():
-        form.save()
+
+    if request.method == "POST" and formulario.is_valid():
+        formulario.save()
+
         messages.success(request, "Usuário atualizado com sucesso.")
-        return redirect("user_list")
-        
+
+        return redirect("lista_usuarios")
+
     return render(
-        request, 
-        "accounts/form.html", 
-        {"form": form, "heading": "Editar usuário", "account": account}
+        request,
+        "accounts/form.html",
+        {"formulario": formulario, "titulo": "Editar usuário", "conta": conta},
     )
 
 
 @login_required
 def perfil(request):
-    """
-    View de autoatendimento para o usuário atualizar suas próprias informações pessoais.
-    Usa `update_session_auth_hash` caso a senha seja alterada para evitar o logout automático.
-    """
-    form = FormularioPerfil(request.POST or None, instance=request.user)
-    if request.method == "POST" and form.is_valid():
-        usuario = form.save()
-        
-        # Mantém a sessão do usuário ativa mesmo após modificar a senha de acesso
-        if form.cleaned_data.get("nova_senha"):
+    formulario = FormularioPerfil(request.POST or None, instance=request.user)
+
+    if request.method == "POST" and formulario.is_valid():
+        usuario = formulario.save()
+
+        if formulario.cleaned_data.get("nova_senha"):
             update_session_auth_hash(request, usuario)
-            
+
         messages.success(request, "Perfil atualizado com sucesso.")
+
         return redirect("perfil")
-        
-    return render(request, "accounts/profile.html", {"form": form})
+
+    return render(request, "accounts/profile.html", {"formulario": formulario})
 
 
 @staff_member_required
 @require_POST
 def inserir_dados(request):
-    """
-    View administrativa de ação para popular o banco de dados com amostras demonstrativas.
-    Valida a URL de retorno (`next`) contra ataques de Open Redirect antes de redirecionar.
-    """
     usuarios = Usuario.objects.filter(is_active=True).order_by("pk")
+
     resultado = inserir_dados_demonstrativos(usuarios)
-    
+
     messages.success(
         request,
         f"{resultado['capturas']} capturas demonstrativas inseridas para {resultado['usuarios']} usuário(s).",
     )
-    
-    # Sanitização da URL de destino contra invasões via Open Redirect
+
+    # Nunca redireciona para um endereço externo informado no formulário.
     destino = request.POST.get("next")
+
     if not destino or not url_has_allowed_host_and_scheme(
-        destino, 
+        destino,
         allowed_hosts={request.get_host()}
     ):
-        destino = "home"
-        
+        destino = "inicio"
+
     return redirect(destino)
 
 
 @staff_member_required
 @require_POST
 def truncar_dados(request):
-    """
-    View administrativa de ação para realizar a limpeza (zerar) de dados operacionais
-    (capturas, leituras de sensores, predições e alertas), mantendo o histórico limpo.
-    """
     totais = truncar_dados_operacionais()
+
     messages.success(
         request,
         f"Dados removidos: {totais['capturas']} capturas, {totais['leituras']} leituras, "
         f"{totais['previsoes']} previsões e {totais['alertas']} alertas.",
     )
-    return redirect("home")
+
+    return redirect("inicio")

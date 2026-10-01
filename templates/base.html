@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>
-      {% block title %}Tomato Monitor{% endblock %}
+      {% block title %}Tomate Monitor{% endblock %}
     </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
@@ -15,10 +15,10 @@
   <body>
     {% if user.is_authenticated %}
       <!-- Menu principal exibido somente para usuários autenticados. -->
-      <nav class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top" style="height: 80px;">
+      <nav class="navbar navbar-expand-lg navbar-dark barra-aplicativo sticky-top" style="height: 80px;">
         <div class="container-xl">
-          <a class="navbar-brand fw-bold" href="{% url 'home' %}">
-            Tomato Monitor
+          <a class="navbar-brand fw-bold" href="{% url 'inicio' %}">
+            Tomate Monitor
           </a>
           <button class="navbar-toggler"
                   type="button"
@@ -32,36 +32,36 @@
           </button>
           <div id="mainNav" class="collapse navbar-collapse">
             <div class="navbar-nav me-auto">
-              <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
-                 href="{% url 'home' %}">
-                <i class="fa-solid fa-house nav-link-icon" aria-hidden="true"></i>
+              <a class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}"
+                 href="{% url 'inicio' %}">
+                <i class="fa-solid fa-house icone-navegacao" aria-hidden="true"></i>
                 <b>Início</b>
               </a>
-              <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                 href="{% url 'dashboard' %}">
-                <i class="fa-solid fa-chart-line nav-link-icon" aria-hidden="true"></i>
+              <a class="nav-link {% if request.resolver_match.url_name == 'painel' %}active{% endif %}"
+                 href="{% url 'painel' %}">
+                <i class="fa-solid fa-chart-line icone-navegacao" aria-hidden="true"></i>
                 <b>Dashboard</b>
               </a>
-              <a class="nav-link {% if 'capture' in request.resolver_match.url_name %}active{% endif %}"
-                 href="{% url 'capture_list' %}">
-                <i class="fa-solid fa-camera nav-link-icon" aria-hidden="true"></i>
+              <a class="nav-link {% if 'captura' in request.resolver_match.url_name %}active{% endif %}"
+                 href="{% url 'lista_capturas' %}">
+                <i class="fa-solid fa-camera icone-navegacao" aria-hidden="true"></i>
                 <b>Capturas</b>
               </a>
-              <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}"
-                 href="{% url 'history' %}">
-                <i class="fa-solid fa-clock-rotate-left nav-link-icon" aria-hidden="true"></i>
+              <a class="nav-link {% if request.resolver_match.url_name == 'historico' %}active{% endif %}"
+                 href="{% url 'historico' %}">
+                <i class="fa-solid fa-clock-rotate-left icone-navegacao" aria-hidden="true"></i>
                 <b>Histórico</b>
               </a>
-              <a class="nav-link {% if 'alert' in request.resolver_match.url_name %}active{% endif %}"
-                 href="{% url 'alert_list' %}">
-                <i class="fa-solid fa-bell nav-link-icon" aria-hidden="true"></i>
+              <a class="nav-link {% if 'alerta' in request.resolver_match.url_name %}active{% endif %}"
+                 href="{% url 'lista_alertas' %}">
+                <i class="fa-solid fa-bell icone-navegacao" aria-hidden="true"></i>
                 <b>Alertas</b>
-                <span class="badge rounded-pill bg-danger">{{ unread_alert_count }}</span>
+                <span class="badge rounded-pill bg-danger">{{ quantidade_alertas_nao_lidos }}</span>
               </a>
               {% if user.is_staff %}
-                <a class="nav-link {% if 'user_' in request.resolver_match.url_name %}active{% endif %}"
-                   href="{% url 'user_list' %}">
-                  <i class="fa-solid fa-users nav-link-icon" aria-hidden="true"></i>
+                <a class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'lista_usuarios' %}">
+                  <i class="fa-solid fa-users icone-navegacao" aria-hidden="true"></i>
                   <b>Usuários</b>
                 </a>
               {% endif %}

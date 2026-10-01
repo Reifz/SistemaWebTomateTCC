@@ -1,50 +1,50 @@
 {% extends 'base.html' %}
-{% block title %}Início | Tomato Monitor{% endblock %}
+{% block title %}Início | Tomate Monitor{% endblock %}
 {% block content %}
-  <section class="hero-panel painel-cabecalho mb-4">
+  <section class="painel-destaque painel-cabecalho mb-4">
     <div>
-      <span class="eyebrow">Monitoramento inteligente</span>
+      <span class="sobretitulo">Monitoramento inteligente</span>
       <h1>Olá, {{ user.first_name|default:'bem-vindo' }}</h1>
       <p>Acompanhe a saúde das plantas, as condições ambientais e os alertas.</p>
     </div>
-    <!-- <a class="btn btn-light btn-lg" href="{% url 'capture_create' %}">Nova captura</a> -->
+    <!-- <a class="btn btn-light btn-lg" href="{% url 'criar_captura' %}">Nova captura</a> -->
   </section>
   <section class="painel-pagina painel-conteudo">
     <div class="row g-3 mb-4">
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho">
           <header class="card-header">Capturas</header>
-          <div class="metric-card-body"><strong>{{ total_captures }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ total_capturas }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho">
           <header class="card-header">Análises concluídas</header>
-          <div class="metric-card-body"><strong>{{ processed_captures }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ capturas_processadas }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header warning">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho aviso">
           <header class="card-header">Alertas ativos</header>
-          <div class="metric-card-body"><strong>{{ active_alerts }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ alertas_ativos }}</strong></div>
         </div>
       </div>
       <div class="col-6 col-lg-3">
-        <div class="metric-card metric-card-com-header danger">
+        <div class="cartao-metrica cartao-metrica-com-cabecalho perigo">
           <header class="card-header">Doenças detectadas</header>
-          <div class="metric-card-body"><strong>{{ diseases_detected }}</strong></div>
+          <div class="corpo-cartao-metrica"><strong>{{ doencas_detectadas }}</strong></div>
         </div>
       </div>
     </div>
     <div class="row g-4">
       <div class="col-lg-7">
-        <section class="content-card content-card-com-header h-100">
-          <header class="card-header section-heading">
+        <section class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
+          <header class="card-header cabecalho-secao">
             <div>
               <h2>Atividade recente</h2>
               <p>Últimas capturas registradas</p>
             </div>
-            <a class="btn btn-success btn-sm" href="{% url 'capture_list' %}">Ver todas</a>
+            <a class="btn btn-success btn-sm" href="{% url 'lista_capturas' %}">Ver todas</a>
           </header>
           <div class="card-body p-0 table-responsive">
             <table class="table">
@@ -58,20 +58,20 @@
                 </tr>
               </thead>
               <tbody>
-                {% for capture in latest_captures %}
+                {% for captura in ultimas_capturas %}
                   <tr>
-                    <td>#{{ capture.pk }}</td>
-                    <td>{{ capture.captured_at|date:'d/m/Y H:i' }}</td>
+                    <td>#{{ captura.pk }}</td>
+                    <td>{{ captura.capturada_em|date:'d/m/Y H:i' }}</td>
                     <td>
-                      <span class="status-pill">{{ capture.get_status_display }}</span>
+                      <span class="rotulo-status">{{ captura.get_status_display }}</span>
                     </td>
                     <td>
-                      <a class="btn btn-success btn-sm" href="{% url 'capture_detail' capture.pk %}">Detalhes</a>
+                      <a class="btn btn-success btn-sm" href="{% url 'detalhar_captura' captura.pk %}">Detalhes</a>
                     </td>
                   </tr>
                 {% empty %}
                   <tr>
-                    <td colspan="4" class="empty-state">Nenhuma captura registrada.</td>
+                    <td colspan="4" class="estado-vazio">Nenhuma captura registrada.</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -80,26 +80,26 @@
         </section>
       </div>
       <div class="col-lg-5">
-        <section class="content-card content-card-com-header h-100">
-          <header class="card-header section-heading">
+        <section class="cartao-conteudo cartao-conteudo-com-cabecalho h-100">
+          <header class="card-header cabecalho-secao">
             <div>
               <h2>Alertas recentes</h2>
               <p>Ocorrências que pedem atenção</p>
             </div>
-            <a class="btn btn-success btn-sm" href="{% url 'alert_list' %}">Ver todos</a>
+            <a class="btn btn-success btn-sm" href="{% url 'lista_alertas' %}">Ver todos</a>
           </header>
           <div class="card-body">
-            {% for alert in latest_alerts %}
-              <div class="alert-row">
-                <span class="severity-dot severity-{{ alert.severity }}">
+            {% for alerta in ultimos_alertas %}
+              <div class="linha-alerta">
+                <span class="ponto-severidade severidade-{{ alerta.severidade }}">
                 </span>
                 <div>
-                  <strong>{{ alert.get_type_display }}</strong>
-                  <p>{{ alert.message|truncatechars:90 }}</p>
+                  <strong>{{ alerta.get_tipo_display }}</strong>
+                  <p>{{ alerta.mensagem|truncatechars:90 }}</p>
                 </div>
               </div>
             {% empty %}
-              <div class="empty-state">Nenhum alerta registrado.</div>
+              <div class="estado-vazio">Nenhum alerta registrado.</div>
             {% endfor %}
           </div>
         </section>

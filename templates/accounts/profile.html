@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Perfil | Tomato Monitor{% endblock %}
+{% block title %}Perfil | Tomate Monitor{% endblock %}
 {% block content %}
   <div class="row justify-content-center">
     <div class="col-lg-7">
       <section class="painel-pagina painel-cabecalho">
-        <div class="page-heading">
+        <div class="cabecalho-pagina">
           <div>
             <h1>Perfil</h1>
             <p>Atualize seus dados pessoais e sua senha.</p>
@@ -13,17 +13,17 @@
       </section>
       <form method="post" class="painel-pagina painel-conteudo">
         {% csrf_token %}
-        {% for field in form %}
+        {% for campo in formulario %}
           <div class="mb-3">
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+            {% if campo.help_text %}<div class="form-text">{{ campo.help_text }}</div>{% endif %}
+            {% for erro in campo.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
           </div>
         {% endfor %}
-        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        {% for erro in formulario.non_field_errors %}<div class="alert alert-danger">{{ erro }}</div>{% endfor %}
         <button class="btn btn-success" type="submit">Salvar perfil</button>
-        <a class="btn btn-light" href="{% url 'home' %}">Cancelar</a>
+        <a class="btn btn-light" href="{% url 'inicio' %}">Cancelar</a>
       </form>
     </div>
   </div>

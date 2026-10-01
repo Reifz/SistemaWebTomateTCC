@@ -1,73 +1,60 @@
 from decimal import Decimal
-from .models import Alert
+
+from .models import Alerta
 
 
 def criar_alertas_da_predicao(predicao):
-    """
-    Avalia os resultados de uma predição e as condições ambientais da captura
-    para gerar e salvar automaticamente os alertas correspondentes.
-    
-    Regras de geração de alertas:
-    1. Confiança < 60%: Alerta de Baixa Confiança (Severidade Média)
-    2. Doença com Confiança >= 80%: Alerta Fitossanitário (Severidade Alta)
-    3. Doença com Confiança >= 80% + Umidade >= 85%: Alerta Crítico (Severidade Crítica)
-    4. Umidade >= 85%: Alerta Ambiental (Severidade Média)
-    """
-    captura = predicao.capture
-    confianca = Decimal(predicao.confidence)
-    
-    # Obtém a umidade da leitura ambiental se houver registro vinculado à captura
-    umidade = None
-    if hasattr(captura, "environmental_reading"):
-        umidade = Decimal(captura.environmental_reading.humidity)
-        
-    # Identifica se a classe identificada indica presença de patógeno/doença
-    tem_doenca = predicao.predicted_class != "Tomato___healthy"
-    alertas = []
+    """Cria no máximo um alerta, respeitando a prioridade RN09–RN12 do TCC."""
 
-    def adicionar(tipo, severidade, mensagem):
-        """Função auxiliar interna para instanciar objetos Alert na lista temporária."""
-        alertas.append(
-            Alert(
-                capture=captura, 
-                prediction=predicao, 
-                type=tipo, 
-                severity=severidade, 
-                message=mensagem
-            )
-        )
+    captura = predicao.captura
 
-    # 1. Alerta de baixa confiança na inferência (solicita nova captura)
-    if confianca < 60:
-        adicionar(
-            Alert.Type.LOW_CONFIDENCE, 
-            Alert.Severity.MEDIUM, 
-            "Baixa confiança na análise. Recomenda-se realizar uma nova captura."
-        )
-        
-    # 2. Alerta fitossanitário para detecção de doença com alta confiabilidade
-    if tem_doenca and confianca >= 80:
-        adicionar(
-            Alert.Type.PHYTOSANITARY, 
-            Alert.Severity.HIGH, 
-            f"Possível doença detectada: {predicao.predicted_class}."
-        )
-        
-    # 3. Alerta crítico quando a presença de doença com alta confiança coincide com clima propício (umidade alta)
+    confianca = Decimal(predicao.confianca)
+
+    leitura = getattr(captura, "leitura_ambiental", None)
+
+    umidade = Decimal(leitura.umidade) if leitura is not None else None
+
+    tem_doenca = predicao.classe_prevista != "Tomato___healthy"
+
+    dados_alerta = None
+
     if tem_doenca and confianca >= 80 and umidade is not None and umidade >= 85:
-        adicionar(
-            Alert.Type.CRITICAL, 
-            Alert.Severity.CRITICAL, 
-            "Doença com alta confiança associada a umidade elevada. Recomenda-se inspeção imediata."
+        dados_alerta = (
+            Alerta.Tipo.CRITICO,
+            Alerta.Severidade.CRITICA,
+            "Doença com alta confiança associada a umidade elevada. Recomenda-se inspeção imediata.",
         )
-        
-    # 4. Alerta ambiental preventivo focado na condição de umidade excessiva na lavoura
-    if umidade is not None and umidade >= 85:
-        adicionar(
-            Alert.Type.ENVIRONMENTAL, 
-            Alert.Severity.MEDIUM, 
-            "Umidade elevada detectada; monitore condições favoráveis a doenças."
+
+    elif tem_doenca and confianca >= 80:
+        dados_alerta = (
+            Alerta.Tipo.FITOSSANITARIO,
+            Alerta.Severidade.ALTA,
+            f"Possível doença detectada: {predicao.classe_prevista}.",
         )
-        
-    # Otimização de banco de dados: insere todos os alertas gerados em uma única query SQL
-    return Alert.objects.bulk_create(alertas)
+
+    elif confianca < 60:
+        dados_alerta = (
+            Alerta.Tipo.BAIXA_CONFIANCA,
+            Alerta.Severidade.MEDIA,
+            "Baixa confiança na análise. Recomenda-se realizar uma nova captura.",
+        )
+
+    elif umidade is not None and umidade >= 85:
+        dados_alerta = (
+            Alerta.Tipo.AMBIENTAL,
+            Alerta.Severidade.MEDIA,
+            "Umidade elevada detectada; monitore condições favoráveis a doenças.",
+        )
+
+    if dados_alerta is None:
+        return []
+
+    alerta = Alerta.objects.create(
+        captura=captura,
+        predicao=predicao,
+        tipo=dados_alerta[0],
+        severidade=dados_alerta[1],
+        mensagem=dados_alerta[2],
+    )
+
+    return [alerta]

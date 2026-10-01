@@ -1,4 +1,4 @@
 from django.urls import path
-from .views import history
+from .views import historico
 
-urlpatterns = [path("", history, name="history")]
+urlpatterns = [path("", historico, name="historico")]

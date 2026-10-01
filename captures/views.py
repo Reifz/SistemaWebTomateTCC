@@ -5,112 +5,127 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from predictions.services import gerar_leitura_ambiental, processar_captura
+from predictions.services import (
+    ErroProcessamento,
+    ProcessamentoEmAndamento,
+    gerar_leitura_ambiental,
+    processar_captura,
+)
 from .forms import FormularioCaptura
-from .models import Capture
+from .models import Captura
 
 
 def _consulta_sem_pagina(request):
-    """
-    Função auxiliar que limpa o parâmetro 'page' dos parâmetros da URL (QueryDict).
-    Mantém os filtros ativos ao navegar entre as páginas de resultado na paginação.
-    """
     consulta = request.GET.copy()
+
     consulta.pop("page", None)
+
     return consulta.urlencode()
 
 
 @login_required
-def capture_list(request):
-    """
-    View responsável pela listagem e filtragem das capturas cadastradas.
-    Aplica escopo de visibilidade por perfil (Staff vs. Usuário comum) e paginação.
-    """
-    # Define a visibilidade inicial: administradores veem todas, usuários comuns veem apenas as suas
-    captures = Capture.objects.all() if request.user.is_staff else request.user.captures.all()
-    
-    # Otimiza o acesso ao banco evitando N+1 queries ao carregar relacionamentos chave na mesma consulta
-    captures = captures.select_related("environmental_reading", "prediction", "user")
-    
-    # Aplicação de filtros dinâmicos via parâmetros da URL (GET)
+def listar_capturas(request):
+    capturas = Captura.objects.all() if request.user.is_staff else request.user.capturas.all()
+
+    capturas = capturas.select_related("leitura_ambiental", "predicao", "usuario")
+
     if request.GET.get("q"):
-        captures = captures.filter(observation__icontains=request.GET["q"])
+        capturas = capturas.filter(observacao__icontains=request.GET["q"])
+
     if request.GET.get("date_from"):
-        captures = captures.filter(captured_at__date__gte=request.GET["date_from"])
+        capturas = capturas.filter(capturada_em__date__gte=request.GET["date_from"])
+
     if request.GET.get("date_to"):
-        captures = captures.filter(captured_at__date__lte=request.GET["date_to"])
+        capturas = capturas.filter(capturada_em__date__lte=request.GET["date_to"])
+
     if request.GET.get("origin"):
-        captures = captures.filter(origin=request.GET["origin"])
+        capturas = capturas.filter(origem=request.GET["origin"])
+
     if request.GET.get("status"):
-        captures = captures.filter(status=request.GET["status"])
+        capturas = capturas.filter(status=request.GET["status"])
+
     if request.user.is_staff and request.GET.get("user"):
-        captures = captures.filter(user_id=request.GET["user"])
-        
+        capturas = capturas.filter(usuario_id=request.GET["user"])
+
     return render(request, "captures/list.html", {
-        "page_obj": Paginator(captures, 15).get_page(request.GET.get("page")),
-        "querystring": _consulta_sem_pagina(request),
-        "origins": (("manual", "Manual"), ("simulado", "Sistema"), ("esp32", "Dispositivo")),
-        "statuses": Capture.Status.choices,
-        "users": get_user_model().objects.order_by("first_name", "email") if request.user.is_staff else (),
+        "pagina": Paginator(capturas, 15).get_page(request.GET.get("page")),
+        "parametros_consulta": _consulta_sem_pagina(request),
+        "origens": (("manual", "Manual"), ("simulado", "Sistema"), ("esp32", "Dispositivo")),
+        "situacoes": Captura.Status.choices,
+        "usuarios": get_user_model().objects.order_by("first_name", "email") if request.user.is_staff else (),
     })
 
 
 @login_required
-def capture_create(request):
-    """
-    View para cadastro de novas capturas e registro automático de leitura ambiental.
-    Garante o vínculo automático da captura com o usuário logado.
-    """
-    form = FormularioCaptura(request.POST or None, request.FILES or None)
-    
-    if request.method == "POST" and form.is_valid():
-        capture = form.save(commit=False)
-        capture.user = request.user
-        capture.save()  # Ponto de integração futura: persiste imagens enviadas via ESP32.
-        
-        # Gera a leitura de temperatura e umidade associada à captura recém-salva
+def criar_captura(request):
+    formulario = FormularioCaptura(request.POST or None, request.FILES or None)
+
+    if request.method == "POST" and formulario.is_valid():
+        captura = formulario.save(commit=False)
+
+        captura.usuario = request.user
+
+        captura.save()
+
         gerar_leitura_ambiental(
-            capture, 
-            form.cleaned_data.get("temperature"), 
-            form.cleaned_data.get("humidity")
+            captura,
+            formulario.cleaned_data.get("temperatura"),
+            formulario.cleaned_data.get("umidade"),
         )
-        
+
         messages.success(request, "Captura cadastrada com leitura ambiental.")
-        return redirect("capture_detail", pk=capture.pk)
-        
-    return render(request, "captures/form.html", {"form": form})
+
+        return redirect("detalhar_captura", id_captura=captura.pk)
+
+    return render(request, "captures/form.html", {"formulario": formulario})
 
 
 @login_required
-def capture_detail(request, pk):
-    """
-    View de detalhamento de uma captura específica.
-    Garante que usuários comuns só consigam visualizar detalhes de suas próprias capturas.
-    """
-    captures = Capture.objects.all() if request.user.is_staff else request.user.captures.all()
-    capture = get_object_or_404(
-        captures.select_related("environmental_reading", "prediction", "user"), 
-        pk=pk
+def detalhar_captura(request, id_captura):
+    capturas = Captura.objects.all() if request.user.is_staff else request.user.capturas.all()
+
+    captura = get_object_or_404(
+        capturas.select_related("leitura_ambiental", "predicao", "usuario"),
+        pk=id_captura,
     )
-    return render(request, "captures/detail.html", {"capture": capture})
+
+    return render(request, "captures/detail.html", {"captura": captura})
 
 
 @login_required
 @require_POST
-def capture_process(request, pk):
-    """
-    View para acionar a análise de IA/processamento em uma captura existente.
-    Restrita a requisições POST para evitar acionamento acidental via navegação GET.
-    """
-    captures = Capture.objects.all() if request.user.is_staff else request.user.captures.all()
-    capture = get_object_or_404(captures, pk=pk)
-    
-    # Processa a inferência e retorna se uma nova predição foi criada ou reaproveitada
-    predicao, criada = processar_captura(capture)
-    
-    # Notifica o usuário de acordo com o resultado do processamento
+def processar_captura_existente(request, id_captura):
+    capturas = Captura.objects.all() if request.user.is_staff else request.user.capturas.all()
+
+    captura = get_object_or_404(capturas, pk=id_captura)
+
+    try:
+        predicao, criada = processar_captura(captura)
+    except ProcessamentoEmAndamento as erro:
+        messages.warning(request, str(erro))
+
+        return redirect("detalhar_captura", id_captura=captura.pk)
+    except ErroProcessamento as erro:
+        messages.error(request, str(erro))
+
+        return redirect("detalhar_captura", id_captura=captura.pk)
+    except Exception:
+        messages.error(
+            request,
+            "Não foi possível concluir a análise. Verifique os modelos e tente novamente.",
+        )
+
+        return redirect("detalhar_captura", id_captura=captura.pk)
+
     messages.success(
-        request, 
+        request,
         "Análise concluída." if criada else "Esta captura já havia sido analisada."
     )
-    return redirect("capture_detail", pk=predicao.capture_id)
+
+    if predicao.status_preprocessamento == predicao.StatusPreprocessamento.FALLBACK_ROI:
+        messages.warning(
+            request,
+            "O MobileSAM não encontrou uma segmentação segura. A análise usou o recorte central.",
+        )
+
+    return redirect("detalhar_captura", id_captura=predicao.captura_id)

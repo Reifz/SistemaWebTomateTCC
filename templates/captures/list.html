@@ -1,77 +1,77 @@
 {% extends 'base.html' %}
-{% block title %}Capturas | Tomato Monitor{% endblock %}
+{% block title %}Capturas | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
         <h1>Capturas</h1>
         <p>Imagens e condições ambientais registradas.</p>
       </div>
-      <a class="btn btn-success" href="{% url 'capture_create' %}">Nova captura</a>
+      <a class="btn btn-success" href="{% url 'criar_captura' %}">Nova captura</a>
     </div>
-    <form method="get" class="filter-panel filtros-integrados">
-      <div class="filter-fields">
-        <div class="filter-field filter-field-search">
+    <form method="get" class="painel-filtro filtros-integrados">
+      <div class="campos-filtro">
+        <div class="campo-filtro campo-filtro-pesquisa">
           <label>Pesquisar</label>
           <input class="form-control"
                  name="q"
                  value="{{ request.GET.q }}"
                  placeholder="Observação da captura">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>De</label>
           <input class="form-control"
                  type="date"
                  name="date_from"
                  value="{{ request.GET.date_from }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Até</label>
           <input class="form-control"
                  type="date"
                  name="date_to"
                  value="{{ request.GET.date_to }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Origem</label>
           <select class="form-select" name="origin">
             <option value="">Todas</option>
-            {% for value,label in origins %}
+            {% for value,label in origens %}
               <option value="{{ value }}"
                       {% if request.GET.origin == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Status</label>
           <select class="form-select" name="status">
             <option value="">Todos</option>
-            {% for value,label in statuses %}
+            {% for value,label in situacoes %}
               <option value="{{ value }}"
                       {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
         {% if user.is_staff %}
-          <div class="filter-field">
+          <div class="campo-filtro">
             <label>Usuário</label>
             <select class="form-select" name="user">
               <option value="">Todos</option>
-              {% for item in users %}
-                <option value="{{ item.pk }}"
-                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% for usuario in usuarios %}
+                <option value="{{ usuario.pk }}"
+                        {% if request.GET.user == usuario.pk|stringformat:'s' %}selected{% endif %}>{{ usuario }}</option>
               {% endfor %}
             </select>
           </div>
         {% endif %}
       </div>
-      <div class="filter-actions">
+      <div class="acoes-filtro">
         <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
       </div>
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card content-card-com-header">
+    <div class="cartao-conteudo cartao-conteudo-com-cabecalho">
       <header class="card-header"><h2>Capturas cadastradas</h2></header>
       <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
@@ -90,32 +90,32 @@
             </tr>
           </thead>
           <tbody>
-            {% for capture in page_obj %}
+            {% for captura in pagina %}
               <tr>
-                <td>{{ capture.pk }}</td>
+                <td>{{ captura.pk }}</td>
                 {% if user.is_staff %}
-                  <td>{{ capture.user }}</td>
+                  <td>{{ captura.usuario }}</td>
                 {% endif %}
-                <td>{{ capture.captured_at|date:'d/m/Y H:i' }}</td>
-                <td>{{ capture.get_origin_display }}</td>
+                <td>{{ captura.capturada_em|date:'d/m/Y H:i' }}</td>
+                <td>{{ captura.rotulo_origem }}</td>
                 <td>
-                  {% if capture.environmental_reading %}
-                    {{ capture.environmental_reading.temperature }} °C /
-                    {{ capture.environmental_reading.humidity }}%
+                  {% if captura.leitura_ambiental %}
+                    {{ captura.leitura_ambiental.temperatura }} °C /
+                    {{ captura.leitura_ambiental.umidade }}%
                   {% else %}
                     Sem leitura
                   {% endif %}
                 </td>
                 <td>
-                  <span class="status-pill">{{ capture.get_status_display }}</span>
+                  <span class="rotulo-status">{{ captura.get_status_display }}</span>
                 </td>
                 <td>
-                  <a class="btn btn-success btn-sm" href="{% url 'capture_detail' capture.pk %}">Detalhes</a>
+                  <a class="btn btn-success btn-sm" href="{% url 'detalhar_captura' captura.pk %}">Detalhes</a>
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7" class="empty-state">Nenhuma captura encontrada.</td>
+                <td colspan="7" class="estado-vazio">Nenhuma captura encontrada.</td>
               </tr>
             {% endfor %}
           </tbody>

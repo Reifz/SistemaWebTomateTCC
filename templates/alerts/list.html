@@ -1,57 +1,57 @@
 {% extends 'base.html' %}
-{% block title %}Alertas | Tomato Monitor{% endblock %}
+{% block title %}Alertas | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
         <h1>Alertas</h1>
         <p>Eventos ambientais e fitossanitários.</p>
       </div>
     </div>
-    <form method="get" class="filter-panel filtros-integrados">
-      <div class="filter-fields filter-fields-many">
-        <div class="filter-field filter-field-search">
+    <form method="get" class="painel-filtro filtros-integrados">
+      <div class="campos-filtro muitos-campos-filtro">
+        <div class="campo-filtro campo-filtro-pesquisa">
           <label>Pesquisar</label>
           <input class="form-control"
                  name="q"
                  value="{{ request.GET.q }}"
                  placeholder="Mensagem ou observação">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>De</label>
           <input class="form-control"
                  type="date"
                  name="date_from"
                  value="{{ request.GET.date_from }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Até</label>
           <input class="form-control"
                  type="date"
                  name="date_to"
                  value="{{ request.GET.date_to }}">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Tipo</label>
           <select class="form-select" name="type">
             <option value="">Todos</option>
-            {% for value,label in types %}
+            {% for value,label in tipos %}
               <option value="{{ value }}"
                       {% if request.GET.type == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Severidade</label>
           <select class="form-select" name="severity">
             <option value="">Todas</option>
-            {% for value,label in severities %}
+            {% for value,label in severidades %}
               <option value="{{ value }}"
                       {% if request.GET.severity == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Situação</label>
           <select class="form-select" name="viewed">
             <option value="">Todas</option>
@@ -60,25 +60,25 @@
           </select>
         </div>
         {% if user.is_staff %}
-          <div class="filter-field">
+          <div class="campo-filtro">
             <label>Usuário</label>
             <select class="form-select" name="user">
               <option value="">Todos</option>
-              {% for item in users %}
-                <option value="{{ item.pk }}"
-                        {% if request.GET.user == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>
+              {% for usuario in usuarios %}
+                <option value="{{ usuario.pk }}"
+                        {% if request.GET.user == usuario.pk|stringformat:'s' %}selected{% endif %}>{{ usuario }}</option>
               {% endfor %}
             </select>
           </div>
         {% endif %}
       </div>
-      <div class="filter-actions">
+      <div class="acoes-filtro">
         <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
       </div>
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card content-card-com-header">
+    <div class="cartao-conteudo cartao-conteudo-com-cabecalho">
       <header class="card-header"><h2>Alertas registrados</h2></header>
       <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
@@ -97,23 +97,23 @@
             </tr>
           </thead>
           <tbody>
-            {% for alert in page_obj %}
-              <tr class="{% if not alert.viewed %}unread-row{% endif %}">
-                <td>{{ alert.created_at|date:'d/m/Y H:i' }}</td>
+            {% for alerta in pagina %}
+              <tr class="{% if not alerta.visualizado %}linha-nao-lida{% endif %}">
+                <td>{{ alerta.criado_em|date:'d/m/Y H:i' }}</td>
                 {% if user.is_staff %}
-                  <td>{{ alert.capture.user }}</td>
+                  <td>{{ alerta.captura.usuario }}</td>
                 {% endif %}
-                <td>{{ alert.get_type_display }}</td>
+                <td>{{ alerta.get_tipo_display }}</td>
                 <td>
-                  <span class="badge severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+                  <span class="badge severidade-{{ alerta.severidade }}">{{ alerta.get_severidade_display }}</span>
                 </td>
-                <td>{{ alert.message }}</td>
+                <td>{{ alerta.mensagem }}</td>
                 <td>
-                  <a href="{% url 'capture_detail' alert.capture_id %}">#{{ alert.capture_id }}</a>
+                  <a href="{% url 'detalhar_captura' alerta.captura_id %}">#{{ alerta.captura_id }}</a>
                 </td>
                 <td>
-                  {% if not alert.viewed %}
-                    <form method="post" action="{% url 'alert_read' alert.pk %}">
+                  {% if not alerta.visualizado %}
+                    <form method="post" action="{% url 'visualizar_alerta' alerta.pk %}">
                       {% csrf_token %}
                       <button class="btn btn-sm btn-outline-secondary">Marcar como visto</button>
                     </form>
@@ -124,7 +124,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="7" class="empty-state">Nenhum alerta encontrado.</td>
+                <td colspan="7" class="estado-vazio">Nenhum alerta encontrado.</td>
               </tr>
             {% endfor %}
           </tbody>

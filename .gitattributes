@@ -14,3 +14,5 @@
 *.jpeg binary
 *.png binary
 *.gif binary
+*.keras filter=lfs diff=lfs merge=lfs -text
+*.pt filter=lfs diff=lfs merge=lfs -text

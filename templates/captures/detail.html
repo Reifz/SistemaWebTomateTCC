@@ -1,49 +1,49 @@
 {% extends 'base.html' %}
-{% block title %}Captura #{{ capture.pk }} | Tomato Monitor{% endblock %}
+{% block title %}Captura #{{ captura.pk }} | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
-        <h1>Captura #{{ capture.pk }}</h1>
+        <h1>Captura #{{ captura.pk }}</h1>
         <p>
-          Registrada em {{ capture.captured_at|date:'d/m/Y H:i' }}
-          {% if user.is_staff %}por {{ capture.user }}{% endif %}.
+          Registrada em {{ captura.capturada_em|date:'d/m/Y H:i' }}
+          {% if user.is_staff %}por {{ captura.usuario }}{% endif %}.
         </p>
       </div>
-      <a class="btn btn-light" href="{% url 'capture_list' %}">Voltar às capturas</a>
+      <a class="btn btn-light" href="{% url 'lista_capturas' %}">Voltar às capturas</a>
     </div>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="row g-4 align-items-stretch capture-detail-grid">
+    <div class="row g-4 align-items-stretch grade-detalhe-captura">
       <div class="col-md-5 d-flex">
-        <article class="content-card capture-card w-100">
-          <header class="capture-card-header">
+        <article class="cartao-conteudo cartao-captura w-100">
+          <header class="cabecalho-cartao-captura">
             <h2>Dados da captura</h2>
           </header>
-          <div class="capture-card-body capture-summary-body">
-            {% if capture.image %}
-              <img class="capture-image img-fluid w-100"
-                   src="{{ capture.image.url }}"
+          <div class="corpo-cartao-captura corpo-resumo-captura">
+            {% if captura.imagem %}
+              <img class="imagem-captura img-fluid w-100"
+                   src="{{ captura.imagem.url }}"
                    alt="Folha capturada">
             {% else %}
-              <div class="image-placeholder">Imagem não disponível</div>
+              <div class="imagem-indisponivel">Imagem não disponível</div>
             {% endif %}
-            <dl class="capture-metadata">
+            <dl class="metadados-captura">
               <div>
                 <dt>Origem</dt>
-                <dd>{{ capture.get_origin_display }}</dd>
+                <dd>{{ captura.rotulo_origem }}</dd>
               </div>
               <div>
                 <dt>Status</dt>
-                <dd><span class="status-pill">{{ capture.get_status_display }}</span></dd>
+                <dd><span class="rotulo-status">{{ captura.get_status_display }}</span></dd>
               </div>
-              <div class="capture-metadata-wide">
+              <div class="metadados-captura-largos">
                 <dt>Observação</dt>
-                <dd>{{ capture.observation|default:'Não informada' }}</dd>
+                <dd>{{ captura.observacao|default:'Não informada' }}</dd>
               </div>
             </dl>
-            {% if capture.status == 'pendente' %}
-              <form method="post" action="{% url 'capture_process' capture.pk %}">
+            {% if captura.status == 'pendente' or captura.status == 'erro' %}
+              <form method="post" action="{% url 'processar_captura' captura.pk %}">
                 {% csrf_token %}
                 <button class="btn btn-success w-100" type="submit">Analisar captura</button>
               </form>
@@ -52,42 +52,68 @@
         </article>
       </div>
       <div class="col-md-7 d-flex">
-        <div class="capture-card-stack w-100">
-          <article class="content-card capture-card">
-            <header class="capture-card-header">
+        <div class="pilha-cartoes-captura w-100">
+          <article class="cartao-conteudo cartao-captura">
+            <header class="cabecalho-cartao-captura">
               <h2>Leitura ambiental</h2>
             </header>
-            <div class="capture-card-body">
-              {% if capture.environmental_reading %}
-                <div class="environment-values">
-                  <div><strong>{{ capture.environmental_reading.temperature }} °C</strong><span>Temperatura</span></div>
-                  <div><strong>{{ capture.environmental_reading.humidity }}%</strong><span>Umidade relativa</span></div>
+            <div class="corpo-cartao-captura">
+              {% if captura.leitura_ambiental %}
+                <div class="valores-ambientais">
+                  <div><strong>{{ captura.leitura_ambiental.temperatura }} °C</strong><span>Temperatura</span></div>
+                  <div><strong>{{ captura.leitura_ambiental.umidade }}%</strong><span>Umidade relativa</span></div>
                 </div>
               {% else %}
                 <p class="text-muted mb-0">Sem leitura disponível.</p>
               {% endif %}
             </div>
           </article>
-        {% if capture.prediction %}
-          <article class="content-card capture-card">
-            <header class="capture-card-header"><h2>Resultado da análise</h2></header>
-            <div class="capture-card-body">
-              <p class="mb-1"><strong>{{ capture.prediction.predicted_class }}</strong></p>
-              <p>Confiança: {{ capture.prediction.confidence }}% ({{ capture.prediction.get_confidence_status_display }})</p>
+        {% if captura.predicao %}
+          <article class="cartao-conteudo cartao-captura">
+            <header class="cabecalho-cartao-captura"><h2>Resultado da análise</h2></header>
+            <div class="corpo-cartao-captura">
+              {% if captura.predicao.caminho_imagem_processada %}
+                <div class="row g-2 mb-3">
+                  <div class="col-sm-6">
+                    <img class="imagem-captura img-fluid w-100"
+                         src="{% url 'api_artefato_predicao' captura.predicao.pk 'processed' %}"
+                         alt="Folha processada pelo MobileSAM">
+                    <small class="text-muted">Imagem processada</small>
+                  </div>
+                  <div class="col-sm-6">
+                    <img class="imagem-captura img-fluid w-100"
+                         src="{% url 'api_artefato_predicao' captura.predicao.pk 'guide' %}"
+                         alt="Regiões avaliadas pelo MobileSAM">
+                    <small class="text-muted">Regiões avaliadas</small>
+                  </div>
+                </div>
+              {% endif %}
+              {% if captura.predicao.status_preprocessamento == 'fallback_roi' %}
+                <div class="alert alert-warning">
+                  O MobileSAM utilizou o recorte central porque nenhuma segmentação foi considerada segura.
+                </div>
+              {% endif %}
+              <p class="mb-1"><strong>{{ captura.predicao.classe_amigavel }}</strong></p>
+              <p>Confiança: {{ captura.predicao.confianca }}% ({{ captura.predicao.get_nivel_confianca_display }})</p>
+              <p class="text-muted small">
+                MobileNetV2: {{ captura.predicao.tempo_inferencia_ms }} ms ·
+                MobileSAM: {{ captura.predicao.tempo_mobilesam_ms }} ms ·
+                Dispositivo: {{ captura.predicao.dispositivo_processamento|upper }}
+              </p>
               <h3 class="h6">Principais hipóteses</h3>
               <ol class="mb-0">
-                {% for item in capture.prediction.top_three %}
+                {% for item in captura.predicao.tres_principais %}
                   <li>{{ item.class }}: {{ item.confidence|floatformat:2 }}%</li>
                 {% endfor %}
               </ol>
             </div>
           </article>
-          <article class="content-card capture-card">
-            <header class="capture-card-header"><h2>Alertas e recomendação</h2></header>
-            <div class="capture-card-body">
-              {% for alert in capture.prediction.alerts.all %}
+          <article class="cartao-conteudo cartao-captura">
+            <header class="cabecalho-cartao-captura"><h2>Alertas e recomendação</h2></header>
+            <div class="corpo-cartao-captura">
+              {% for alerta in captura.predicao.alertas.all %}
                 <div class="alert alert-warning mb-2">
-                  <strong>{{ alert.get_type_display }}:</strong> {{ alert.message }}
+                  <strong>{{ alerta.get_tipo_display }}:</strong> {{ alerta.mensagem }}
                 </div>
               {% empty %}
                 <div class="alert alert-success mb-0">Nenhum alerta gerado.</div>
@@ -95,9 +121,9 @@
             </div>
           </article>
         {% else %}
-          <article class="content-card capture-card">
-            <header class="capture-card-header"><h2>Resultado da análise</h2></header>
-            <div class="capture-card-body"><p class="text-muted mb-0">Captura não analisada.</p></div>
+          <article class="cartao-conteudo cartao-captura">
+            <header class="cabecalho-cartao-captura"><h2>Resultado da análise</h2></header>
+            <div class="corpo-cartao-captura"><p class="text-muted mb-0">Captura não analisada.</p></div>
           </article>
         {% endif %}
         </div>

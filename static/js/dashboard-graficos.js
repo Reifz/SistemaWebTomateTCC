@@ -20,6 +20,7 @@
 
   function lerDadosJson(idElemento) {
     const elemento = document.getElementById(idElemento);
+
     return elemento ? JSON.parse(elemento.textContent) : [];
   }
 
@@ -32,15 +33,17 @@
   }
 
   function criarGraficoDistribuicao() {
-    const distribuicao = lerDadosJson("distribution-data");
-    const canvas = document.getElementById("classChart");
-    if (!canvas || !distribuicao.length) return;
+    const distribuicao = lerDadosJson("dados-distribuicao");
 
-    new Chart(canvas, {
+    const tela = document.getElementById("graficoClasses");
+
+    if (!tela || !distribuicao.length) return;
+
+    new Chart(tela, {
       type: "doughnut",
       data: {
         labels: distribuicao.map((item) =>
-          traduzirNomeClasse(item.predicted_class),
+          traduzirNomeClasse(item.classe_prevista),
         ),
         datasets: [
           {
@@ -54,24 +57,26 @@
   }
 
   function criarGraficoAmbiental() {
-    const leituras = lerDadosJson("readings-data");
-    const canvas = document.getElementById("environmentChart");
-    if (!canvas || !leituras.length) return;
+    const leituras = lerDadosJson("dados-leituras");
 
-    new Chart(canvas, {
+    const tela = document.getElementById("graficoAmbiente");
+
+    if (!tela || !leituras.length) return;
+
+    new Chart(tela, {
       type: "line",
       data: {
-        labels: leituras.map((item) => formatarData(item.measured_at)),
+        labels: leituras.map((item) => formatarData(item.medida_em)),
         datasets: [
           {
             label: "Temperatura °C",
-            data: leituras.map((item) => item.temperature),
+            data: leituras.map((item) => item.temperatura),
             borderColor: "#d96b43",
             tension: 0.35,
           },
           {
             label: "Umidade %",
-            data: leituras.map((item) => item.humidity),
+            data: leituras.map((item) => item.umidade),
             borderColor: "#2f80b7",
             tension: 0.35,
           },
@@ -82,15 +87,17 @@
   }
 
   function criarGraficoConfianca() {
-    const estatisticas = lerDadosJson("class-statistics-data");
-    const canvas = document.getElementById("confidenceChart");
-    if (!canvas || !estatisticas.length) return;
+    const estatisticas = lerDadosJson("dados-estatisticas-classes");
 
-    new Chart(canvas, {
+    const tela = document.getElementById("graficoConfianca");
+
+    if (!tela || !estatisticas.length) return;
+
+    new Chart(tela, {
       type: "bar",
       data: {
         labels: estatisticas.map((item) =>
-          traduzirNomeClasse(item.predicted_class),
+          traduzirNomeClasse(item.classe_prevista),
         ),
         datasets: [
           {
@@ -115,9 +122,11 @@
   }
 
   function criarGraficoAlertas() {
-    const alertas = lerDadosJson("alerts-timeline-data");
-    const canvas = document.getElementById("alertsTimelineChart");
-    if (!canvas || !alertas.length) return;
+    const alertas = lerDadosJson("dados-linha-tempo-alertas");
+
+    const tela = document.getElementById("graficoLinhaTempoAlertas");
+
+    if (!tela || !alertas.length) return;
 
     const severidades = [
       { rotulo: "Baixa", campo: "baixa", cor: "#708078" },
@@ -126,10 +135,10 @@
       { rotulo: "Crítica", campo: "critica", cor: "#c83d3d" },
     ];
 
-    new Chart(canvas, {
+    new Chart(tela, {
       type: "line",
       data: {
-        labels: alertas.map((item) => formatarData(`${item.date}T12:00:00`)),
+        labels: alertas.map((item) => formatarData(`${item.data}T12:00:00`)),
         datasets: severidades.map((severidade) => ({
           label: severidade.rotulo,
           data: alertas.map((item) => item[severidade.campo]),
@@ -149,7 +158,10 @@
   if (!window.Chart) return;
 
   criarGraficoDistribuicao();
+
   criarGraficoAmbiental();
+
   criarGraficoConfianca();
+
   criarGraficoAlertas();
 })();

@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
-{% block title %}Usuários | Tomato Monitor{% endblock %}
+{% block title %}Usuários | Tomate Monitor{% endblock %}
 {% block content %}
   <section class="painel-pagina painel-cabecalho">
-    <div class="page-heading">
+    <div class="cabecalho-pagina">
       <div>
 
         <h1>Usuários</h1>
-        <p>Gerencie o acesso ao Tomato Monitor.</p>
+        <p>Gerencie o acesso ao Tomate Monitor.</p>
       </div>
-      <a class="btn btn-success" href="{% url 'user_create' %}">Novo usuário</a>
+      <a class="btn btn-success" href="{% url 'criar_usuario' %}">Novo usuário</a>
     </div>
-    <form method="get" class="filter-panel filtros-integrados">
-      <div class="filter-fields">
-        <div class="filter-field filter-field-search">
+    <form method="get" class="painel-filtro filtros-integrados">
+      <div class="campos-filtro">
+        <div class="campo-filtro campo-filtro-pesquisa">
           <label>Pesquisar</label>
           <input class="form-control"
                  name="q"
                  value="{{ request.GET.q }}"
                  placeholder="Nome ou e-mail">
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Perfil</label>
           <select class="form-select" name="role">
             <option value="">Todos</option>
@@ -27,7 +27,7 @@
             <option value="user" {% if request.GET.role == 'user' %}selected{% endif %}>Usuário</option>
           </select>
         </div>
-        <div class="filter-field">
+        <div class="campo-filtro">
           <label>Situação</label>
           <select class="form-select" name="status">
             <option value="">Todas</option>
@@ -38,13 +38,13 @@
           </select>
         </div>
       </div>
-      <div class="filter-actions">
+      <div class="acoes-filtro">
         <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
       </div>
     </form>
   </section>
   <section class="painel-pagina painel-conteudo">
-    <div class="content-card content-card-com-header">
+    <div class="cartao-conteudo cartao-conteudo-com-cabecalho">
       <header class="card-header"><h2>Usuários cadastrados</h2></header>
       <div class="card-body p-0 table-responsive">
         <table class="table mb-0">
@@ -60,28 +60,28 @@
             </tr>
           </thead>
           <tbody>
-            {% for account in page_obj %}
+            {% for conta in pagina %}
               <tr>
                 <td>
-                  <strong>{{ account.get_full_name|default:'Não informado' }}</strong>
+                  <strong>{{ conta.get_full_name|default:'Não informado' }}</strong>
                 </td>
-                <td>{{ account.email }}</td>
+                <td>{{ conta.email }}</td>
                 <td>
-                  {% if account.is_staff %}Administrador{% else %}Usuário{% endif %}
+                  {% if conta.is_staff %}Administrador{% else %}Usuário{% endif %}
                 </td>
                 <td>
-                  <span class="status-pill {% if not account.is_active %}inactive{% endif %}">
-                    {% if account.is_active %}Ativa{% else %}Inativa{% endif %}
+                  <span class="rotulo-status {% if not conta.is_active %}inativo{% endif %}">
+                    {% if conta.is_active %}Ativa{% else %}Inativa{% endif %}
                   </span>
                 </td>
-                <td>{{ account.last_login|date:'d/m/Y H:i'|default:'Nunca' }}</td>
+                <td>{{ conta.last_login|date:'d/m/Y H:i'|default:'Nunca' }}</td>
                 <td>
-                  <a class="btn btn-success btn-sm" href="{% url 'user_edit' account.pk %}">Editar</a>
+                  <a class="btn btn-success btn-sm" href="{% url 'editar_usuario' conta.pk %}">Editar</a>
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty-state">Nenhum usuário encontrado.</td>
+                <td colspan="6" class="estado-vazio">Nenhum usuário encontrado.</td>
               </tr>
             {% endfor %}
           </tbody>
