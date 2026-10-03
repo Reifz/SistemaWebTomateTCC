@@ -4,7 +4,7 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase
 
-
+# Conjunto de identificadores em inglês/antigos que não devem ser reintroduzidos no código
 IDENTIFICADORES_ANTIGOS = {
     "Account",
     "Alert",
@@ -56,6 +56,7 @@ EXCECOES_CONTRATOS_EXTERNOS = {
     (Path("api/serializers.py"), "environmental_reading"),
 }
 
+# Marcadores de nomenclatura antiga (classes CSS, títulos, nomes de contexto) para validação do frontend
 MARCADORES_FRONTEND_ANTIGOS = {
     "AgroMonitor",
     "Tomato Monitor",
@@ -86,7 +87,18 @@ MARCADORES_FRONTEND_ANTIGOS = {
 
 
 class TesteNomenclaturaPortugues(SimpleTestCase):
+    """
+    Suíte de testes responsável por garantir a padronização e a consistência da
+    nomenclatura do projeto em português, prevenindo a reintrodução de identificadores
+    legados em inglês tanto no backend Python quanto nos artefatos de frontend.
+    """
+
     def test_codigo_python_nao_reintroduz_identificadores_antigos(self):
+        """
+        Percorre os arquivos Python do projeto e inspeciona a AST em busca de
+        definições de variáveis, funções, classes ou argumentos em inglês contidos
+        em IDENTIFICADORES_ANTIGOS.
+        """
         ocorrencias = []
 
         for caminho in self._arquivos_python():
@@ -103,6 +115,10 @@ class TesteNomenclaturaPortugues(SimpleTestCase):
         self.assertEqual([], ocorrencias, "Identificadores próprios em inglês encontrados:\n" + "\n".join(ocorrencias))
 
     def test_frontend_nao_reintroduz_nomenclatura_antiga(self):
+        """
+        Valida os arquivos de template HTML, CSS e JavaScript para garantir que termos,
+        classes CSS e variáveis de contexto do legado não sejam utilizados.
+        """
         ocorrencias = []
 
         for caminho in self._arquivos_frontend():
@@ -116,6 +132,10 @@ class TesteNomenclaturaPortugues(SimpleTestCase):
 
     @staticmethod
     def _nome_definido(no):
+        """
+        Extrai o identificador declarado por um nó da AST (definição de classe/função,
+        atribuição de variável ou parâmetro).
+        """
         if isinstance(no, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             return no.name
 
@@ -129,6 +149,10 @@ class TesteNomenclaturaPortugues(SimpleTestCase):
 
     @staticmethod
     def _arquivos_python():
+        """
+        Mapeia iterativamente os caminhos de todos os arquivos .py do projeto,
+        desconsiderando migrações de banco de dados e o próprio arquivo do teste.
+        """
         pastas = ("accounts", "alerts", "api", "captures", "dashboard", "predictions", "sensors", "agromonitor")
 
         for pasta in pastas:
@@ -138,6 +162,9 @@ class TesteNomenclaturaPortugues(SimpleTestCase):
 
     @staticmethod
     def _arquivos_frontend():
+        """
+        Mapeia iterativamente os caminhos dos arquivos do frontend (.html, .css, .js).
+        """
         for pasta, extensoes in (("templates", ("*.html",)), ("static", ("*.css", "*.js"))):
             for extensao in extensoes:
                 yield from (settings.BASE_DIR / pasta).rglob(extensao)

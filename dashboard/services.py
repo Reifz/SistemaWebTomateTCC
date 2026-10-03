@@ -7,31 +7,39 @@ from django.conf import settings
 from django.db.models import Avg, Count
 from django.urls import reverse
 from django.utils import timezone
+
 from alerts.models import Alerta
 from captures.models import Captura
 from predictions.models import Predicao
 from sensors.models import LeituraAmbiental
 
+# Constantes globais do serviço de métricas do painel
 CLASSE_SAUDAVEL = "Tomato___healthy"
-
 QUANTIDADE_DIAS_ALERTAS = 30
 
 
 def resumo_painel(usuario, usuario_selecionado=None):
+    """
+    Consolida e retorna todas as métricas e estatísticas agregadas para exibição no dashboard.
+    
+    Aplica controle de visibilidade multitenant/staff e agrupa informações de capturas,
+    predições da IA, leituras de sensores ambientais e histórico temporal de alertas.
+    """
     capturas = _capturas_visiveis(usuario, usuario_selecionado)
 
+    # Filtra os relacionamentos associados apenas às capturas visíveis ao usuário
     predicoes = Predicao.objects.filter(captura__in=capturas)
-
     alertas = Alerta.objects.filter(captura__in=capturas)
-
     leituras_ambientais = LeituraAmbiental.objects.filter(captura__in=capturas)
 
+    # Distribuição do total de diagnósticos/predições agrupados por classe
     distribuicao = list(
         predicoes.values("classe_prevista")
         .annotate(total=Count("id"))
         .order_by("classe_prevista")
     )
 
+    # Recupera as 10 leituras mais recentes dos sensores ambientais e reverte a ordem para cronológica
     leituras_recentes = list(
         leituras_ambientais.order_by("-medida_em").values(
             "medida_em",
@@ -39,11 +47,10 @@ def resumo_painel(usuario, usuario_selecionado=None):
             "umidade",
         )[:10]
     )
-
     leituras_recentes.reverse()
 
+    # Cálculo de métricas secundárias e agregados estatísticos
     estatisticas_classes = _estatisticas_por_classe(predicoes)
-
     alertas_temporais = _alertas_por_dia(alertas)
 
     return {
@@ -65,6 +72,11 @@ def resumo_painel(usuario, usuario_selecionado=None):
 
 
 def _capturas_visiveis(usuario, usuario_selecionado=None):
+    """
+    Função utilitária interna para filtrar o QuerySet base de capturas.
+    Se o usuário for da equipe de suporte (staff), permite visualizar todas as capturas
+    ou filtrar por um usuário específico. Caso contrário, restringe estritamente ao próprio usuário.
+    """
     if usuario.is_staff:
         capturas = Captura.objects.all()
 
@@ -77,18 +89,27 @@ def _capturas_visiveis(usuario, usuario_selecionado=None):
 
 
 def _valor_ultima_leitura(leituras, campo):
+    """
+    Retorna o valor de um campo específico da última leitura ambiental registrada,
+    ou None caso não haja medições cadastradas.
+    """
     ultima_leitura = leituras.first()
 
     return getattr(ultima_leitura, campo) if ultima_leitura else None
 
 
 def _estatisticas_por_classe(predicoes):
+    """
+    Calcula o total de ocorrências e a média percentual de confiança para cada
+    classe de doença/diagnóstico prevista pelo modelo.
+    """
     estatisticas = list(
         predicoes.values("classe_prevista")
         .annotate(total=Count("id"), confianca_media=Avg("confianca"))
         .order_by("-confianca_media", "classe_prevista")
     )
 
+    # Arredonda o valor decimal da confiança média para 2 casas decimais
     for item in estatisticas:
         item["confianca_media"] = round(float(item["confianca_media"]), 2)
 
@@ -96,6 +117,9 @@ def _estatisticas_por_classe(predicoes):
 
 
 def _cinco_classes_mais_detectadas(estatisticas):
+    """
+    Retorna as 5 classes com maior número absoluto de ocorrências detectadas.
+    """
     return sorted(
         estatisticas,
         key=lambda item: (-item["total"], item["classe_prevista"]),
@@ -103,6 +127,10 @@ def _cinco_classes_mais_detectadas(estatisticas):
 
 
 def _alertas_temporais_possuem_dados(alertas_temporais):
+    """
+    Verifica se a série temporal dos últimos dias possui pelo menos um alerta
+    registrado em qualquer nível de severidade.
+    """
     severidades = (
         Alerta.Severidade.BAIXA,
         Alerta.Severidade.MEDIA,
@@ -118,12 +146,15 @@ def _alertas_temporais_possuem_dados(alertas_temporais):
 
 
 def _alertas_por_dia(alertas):
+    """
+    Agrupa os alertas gerados nos últimos 30 dias (definido por QUANTIDADE_DIAS_ALERTAS),
+    contabilizando a frequência por data e por nível de severidade.
+    """
     hoje = timezone.localdate()
-
     inicio = hoje - timedelta(days=QUANTIDADE_DIAS_ALERTAS - 1)
 
+    # Delimita os intervalos com timezone para consulta precisa no banco
     inicio_periodo = timezone.make_aware(datetime.combine(inicio, datetime.min.time()))
-
     fim_periodo = timezone.make_aware(datetime.combine(hoje + timedelta(days=1), datetime.min.time()))
 
     severidades = [
@@ -135,6 +166,7 @@ def _alertas_por_dia(alertas):
 
     contagens = Counter()
 
+    # Filtra e contabiliza as ocorrências por data local e nível de severidade
     for criado_em, severidade in alertas.filter(
         criado_em__gte=inicio_periodo,
         criado_em__lt=fim_periodo,
@@ -144,6 +176,7 @@ def _alertas_por_dia(alertas):
         if dia <= hoje:
             contagens[(dia, severidade)] += 1
 
+    # Estrutura e formata o resultado em uma lista ordenada dia a dia em ISO format
     return [
         {
             "data": (inicio + timedelta(days=indice)).isoformat(),
@@ -157,8 +190,11 @@ def _alertas_por_dia(alertas):
 
 
 def resultados_manuais():
-    """Lê resultados do disco sem alterar o banco de dados."""
-
+    """
+    Lê diretamente os arquivos de predições manuais gravados no sistema de arquivos
+    (diretório RESULTS_ROOT), extraindo metadados e rotas para visualização sem alterar
+    o banco de dados.
+    """
     raiz = Path(settings.RESULTS_ROOT)
 
     if not raiz.is_dir():
@@ -166,6 +202,7 @@ def resultados_manuais():
 
     resultados = []
 
+    # Varre as pastas de execução ordenando pelas mais recentes (formato do diretório: YYYYMMDD_HHMMSS)
     for pasta_execucao in sorted((item for item in raiz.iterdir() if item.is_dir()), reverse=True):
         arquivo_predicao = pasta_execucao / "predicao.json"
 
@@ -174,13 +211,13 @@ def resultados_manuais():
 
         try:
             predicao = json.loads(arquivo_predicao.read_text(encoding="utf-8"))
-
             data_captura = timezone.make_aware(datetime.strptime(pasta_execucao.name[:15], "%Y%m%d_%H%M%S"))
         except (OSError, ValueError, json.JSONDecodeError):
             continue
 
         principais_predicoes = predicao.get("principais_predicoes", [])[:3]
 
+        # Monta a estrutura formatada com rótulos limpos e URLs dinâmicas do Django
         resultados.append({
             "id": pasta_execucao.name,
             "capturada_em": data_captura,

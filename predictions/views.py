@@ -1,53 +1,79 @@
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import render
+
 from .models import Predicao
 
 
 @login_required
 def historico(request):
-    predicoes = Predicao.objects.all() if request.user.is_staff else Predicao.objects.filter(captura__usuario=request.user)
+    """
+    Exibe o histórico paginado de predições com suporte a filtros dinâmicos de busca,
+    período, classe, severidade de alertas, nível de confiança e usuário (para staff).
+    """
+    # Restringe o escopo inicial com base no nível de permissão do usuário
+    if request.user.is_staff:
+        predicoes = Predicao.objects.all()
+    else:
+        predicoes = Predicao.objects.filter(captura__usuario=request.user)
 
+    # Otimiza o carregamento das relações de chaves estrangeiras e relacionamentos M2M
     predicoes = predicoes.select_related("captura", "captura__usuario").prefetch_related("alertas")
 
-    if request.GET.get("q"):
+    # Filtro de busca textual (classe prevista ou observação da captura)
+    termo_busca = request.GET.get("q")
+    if termo_busca:
         predicoes = predicoes.filter(
-            Q(classe_prevista__icontains=request.GET["q"]) |
-            Q(captura__observacao__icontains=request.GET["q"])
+            Q(classe_prevista__icontains=termo_busca) | Q(captura__observacao__icontains=termo_busca)
         )
 
-    if request.user.is_staff and request.GET.get("user"):
-        predicoes = predicoes.filter(captura__usuario_id=request.GET["user"])
+    # Filtro por usuário específico (visível apenas para superusuários/staff)
+    usuario_id = request.GET.get("user")
+    if request.user.is_staff and usuario_id:
+        predicoes = predicoes.filter(captura__usuario_id=usuario_id)
 
-    if request.GET.get("date_from"):
-        predicoes = predicoes.filter(prevista_em__date__gte=request.GET["date_from"])
+    # Filtros por intervalo de datas
+    data_inicio = request.GET.get("date_from")
+    if data_inicio:
+        predicoes = predicoes.filter(prevista_em__date__gte=data_inicio)
 
-    if request.GET.get("date_to"):
-        predicoes = predicoes.filter(prevista_em__date__lte=request.GET["date_to"])
+    data_fim = request.GET.get("date_to")
+    if data_fim:
+        predicoes = predicoes.filter(prevista_em__date__lte=data_fim)
 
-    if request.GET.get("class"):
-        predicoes = predicoes.filter(classe_prevista=request.GET["class"])
+    # Filtro por classe predita específica
+    classe_selecionada = request.GET.get("class")
+    if classe_selecionada:
+        predicoes = predicoes.filter(classe_prevista=classe_selecionada)
 
-    if request.GET.get("severity"):
-        predicoes = predicoes.filter(alertas__severidade=request.GET["severity"])
+    # Filtro por nível de severidade do alerta
+    severidade = request.GET.get("severity")
+    if severidade:
+        predicoes = predicoes.filter(alertas__severidade=severidade)
 
-    if request.GET.get("confidence") == "low":
+    # Filtro por faixas de nível de confiança (%)
+    nivel_confianca = request.GET.get("confidence")
+    if nivel_confianca == "low":
         predicoes = predicoes.filter(confianca__lt=60)
-    elif request.GET.get("confidence") == "medium":
+    elif nivel_confianca == "medium":
         predicoes = predicoes.filter(confianca__gte=60, confianca__lt=80)
-    elif request.GET.get("confidence") == "high":
+    elif nivel_confianca == "high":
         predicoes = predicoes.filter(confianca__gte=80)
 
-    escopo_classes = Predicao.objects.all() if request.user.is_staff else Predicao.objects.filter(captura__usuario=request.user)
+    # Define o escopo para a listagem das opções no select de classes do filtro
+    if request.user.is_staff:
+        escopo_classes = Predicao.objects.all()
+    else:
+        escopo_classes = Predicao.objects.filter(captura__usuario=request.user)
 
+    # Preserva os parâmetros da query string omitindo a página atual para manter os filtros durante a paginação
     consulta = request.GET.copy()
-
     consulta.pop("page", None)
 
     contexto = {
-        # O filtro por alertas pode repetir a mesma predição.
+        # `.distinct()` evita duplicações decorrentes do JOIN com o modelo de alertas no prefetch
         "pagina": Paginator(predicoes.distinct(), 15).get_page(request.GET.get("page")),
         "classes": escopo_classes.values_list("classe_prevista", flat=True).distinct().order_by("classe_prevista"),
         "usuarios": get_user_model().objects.order_by("first_name", "email") if request.user.is_staff else (),

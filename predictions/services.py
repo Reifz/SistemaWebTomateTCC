@@ -13,34 +13,42 @@ from captures.models import Captura
 from predictions.models import Predicao
 from sensors.models import LeituraAmbiental
 
+# Logger do módulo para rastreabilidade de execuções, erros e avisos de fallback
 registrador = logging.getLogger(__name__)
 
+# Lock de thread para evitar inferências concorrentes e proteger o consumo de memória (GPU/CPU)
 BLOQUEIO_INFERENCIA = threading.Lock()
 
+# Identificador da versão do modelo de rede neural utilizado na classificação
 NOME_MODELO = "MobileNetV2_Tomato_Modelo_B_v5"
 
 
+# Exceções customizadas do pipeline de predição
 class ErroProcessamento(RuntimeError):
-    """Erro conhecido durante o processamento de uma captura."""
+    """Exceção base para erros conhecidos durante o processamento de uma captura."""
 
 
 class ImagemInvalida(ErroProcessamento):
-    """A captura não possui uma imagem JPEG íntegra."""
+    """Lançada quando a captura não possui uma imagem JPEG válida ou está corrompida."""
 
 
 class LeituraInvalida(ErroProcessamento):
-    """A leitura ambiental está fora das faixas definidas no TCC."""
+    """Lançada quando a leitura ambiental possui valores fora do intervalo físico aceitável."""
 
 
 class ProcessamentoEmAndamento(ErroProcessamento):
-    """A captura já está sendo analisada por outra requisição."""
+    """Lançada quando a captura já está sob análise por outra thread ou requisição."""
 
 
 class ModeloIndisponivel(ErroProcessamento):
-    """Os pesos necessários não estão disponíveis ou íntegros."""
+    """Lançada quando os pesos da rede neural ou artefatos do modelo não estão acessíveis."""
 
 
 def executar_analise_real(caminho_imagem):
+    """
+    Importa dinamicamente e executa o módulo de inferência sobre a imagem informada,
+    mapeando erros de artefatos para a exceção específica da aplicação.
+    """
     try:
         from predictions.inferencia import ErroArtefatoModelo, analisar
 
@@ -50,6 +58,9 @@ def executar_analise_real(caminho_imagem):
 
 
 def nivel_confianca(confianca):
+    """
+    Categoriza o percentual de confiança da predição em níveis discretos (BAIXA, MEDIA ou ALTA).
+    """
     valor = Decimal(str(confianca))
 
     if valor < 60:
@@ -62,8 +73,10 @@ def nivel_confianca(confianca):
 
 
 def gerar_leitura_ambiental(captura, temperatura=None, umidade=None, gerador=None):
-    """Registra a leitura informada ou gera valores somente para dados demonstrativos."""
-
+    """
+    Cria o registro de leitura ambiental (temperatura/umidade) associado a uma captura.
+    Se não forem fornecidos, gera dados randômicos dentro de faixas normais para fins de demonstração.
+    """
     gerador = gerador or random.SystemRandom()
 
     temperatura = temperatura if temperatura is not None else round(gerador.uniform(18, 35), 2)
@@ -78,6 +91,12 @@ def gerar_leitura_ambiental(captura, temperatura=None, umidade=None, gerador=Non
 
 
 def _validar_captura(captura):
+    """
+    Executa sanitizações prévias na captura:
+    1. Verifica a existência e a extensão (.jpg/.jpeg) da imagem.
+    2. Valida a integridade do arquivo de imagem com a Pillow.
+    3. Verifica se os dados da leitura ambiental (se existirem) estão dentro dos limites aceitáveis.
+    """
     if not captura.imagem:
         raise ImagemInvalida("A captura não possui imagem para análise.")
 
@@ -105,26 +124,40 @@ def _validar_captura(captura):
 
 
 def _caminho_relativo_resultado(caminho):
+    """
+    Converte um caminho absoluto de arquivo para um caminho relativo baseado em RESULTS_ROOT.
+    """
     return Path(caminho).resolve().relative_to(Path(settings.RESULTS_ROOT).resolve()).as_posix()
 
 
 def _marcar_erro(id_captura):
+    """
+    Atualiza o status da captura para ERRO caso ela ainda não tenha sido processada.
+    """
     Captura.objects.filter(pk=id_captura).exclude(
         status=Captura.Status.PROCESSADA
     ).update(status=Captura.Status.ERRO)
 
 
 def processar_captura(captura, executor_analise=None):
-    """Executa MobileSAM e MobileNetV2, persistindo um único resultado por captura."""
-
+    """
+    Orquestra o pipeline completo de visão computacional (MobileSAM + MobileNetV2):
+    1. Bloqueia o registro da captura no banco (`select_for_update`) e valida a entrada.
+    2. Executa a inferência computacional sob um Lock thread-safe.
+    3. Registra a predição no banco de dados, aciona os alertas associados e atualiza o status.
+    
+    Retorna uma tupla `(predicao, criada)` indicando o resultado e se foi um novo registro.
+    """
     executor = executor_analise or executar_analise_real
 
+    # Etapa 1: Bloqueio do banco de dados e transição do status para PROCESSANDO
     try:
         with transaction.atomic():
             captura_bloqueada = Captura.objects.select_for_update().select_related(
                 "leitura_ambiental"
             ).get(pk=captura.pk)
 
+            # Idempotência: se já existir predição, retorna a existente
             predicao_existente = Predicao.objects.filter(
                 captura=captura_bloqueada
             ).first()
@@ -149,6 +182,7 @@ def processar_captura(captura, executor_analise=None):
 
     registrador.info("Iniciando inferência real da captura %s.", captura.pk)
 
+    # Etapa 2: Execução da inferência sob o Lock de thread (fora da transação de banco longa)
     try:
         with BLOQUEIO_INFERENCIA:
             resultado = executor(captura_bloqueada.imagem.path)
@@ -161,11 +195,13 @@ def processar_captura(captura, executor_analise=None):
 
     classificacao = resultado.classificacao
 
+    # Formata as 3 maiores probabilidades para armazenamento em JSON
     tres_principais = [
         {"class": item["classe"], "confidence": item["percentual"]}
         for item in classificacao.principais_predicoes[:3]
     ]
 
+    # Etapa 3: Persistência do resultado da predição e alteração do status para PROCESSADA
     with transaction.atomic():
         captura_bloqueada = Captura.objects.select_for_update().get(pk=captura.pk)
 
@@ -193,6 +229,7 @@ def processar_captura(captura, executor_analise=None):
             motivos_fallback=resultado.preprocessamento.motivos,
         )
 
+        # Dispara regras de negócio para geração de alertas com base na predição
         criar_alertas_da_predicao(predicao)
 
         captura_bloqueada.status = Captura.Status.PROCESSADA
@@ -206,6 +243,7 @@ def processar_captura(captura, executor_analise=None):
         predicao.tempo_mobilesam_ms,
     )
 
+    # Log específico para monitoramento de rotas de fallback da ROI
     if predicao.status_preprocessamento == Predicao.StatusPreprocessamento.FALLBACK_ROI:
         registrador.warning(
             "Captura %s processada com fallback_roi: %s.",

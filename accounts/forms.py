@@ -6,6 +6,10 @@ Usuario = get_user_model()
 
 
 class FormularioEstilizado:
+    """
+    Mixin auxiliar que percorre os campos do formulário para injetar dinamicamente
+    as classes CSS do Bootstrap (`form-control` e `form-check-input`) nos widgets.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -16,6 +20,10 @@ class FormularioEstilizado:
 
 
 class FormularioCriacaoUsuario(FormularioEstilizado, forms.ModelForm):
+    """
+    Formulário administrativo para criação de novos usuários, com validação de senha
+    em dois campos e criptografia automática no salvamento.
+    """
     senha = forms.CharField(
         label="Senha",
         widget=forms.PasswordInput,
@@ -29,9 +37,7 @@ class FormularioCriacaoUsuario(FormularioEstilizado, forms.ModelForm):
 
     class Meta:
         model = Usuario
-
         fields = ("first_name", "last_name", "email", "is_staff", "is_active")
-
         labels = {
             "first_name": "Nome",
             "last_name": "Sobrenome",
@@ -40,6 +46,7 @@ class FormularioCriacaoUsuario(FormularioEstilizado, forms.ModelForm):
         }
 
     def clean(self):
+        """Valida se os campos 'senha' e 'confirmacao_senha' são idênticos."""
         dados = super().clean()
 
         if dados.get("senha") != dados.get("confirmacao_senha"):
@@ -48,8 +55,8 @@ class FormularioCriacaoUsuario(FormularioEstilizado, forms.ModelForm):
         return dados
 
     def save(self, commit=True):
+        """Aplica o algoritmo de hash na senha do usuário antes de persistir no banco."""
         usuario = super().save(commit=False)
-
         usuario.set_password(self.cleaned_data["senha"])
 
         if commit:
@@ -59,7 +66,10 @@ class FormularioCriacaoUsuario(FormularioEstilizado, forms.ModelForm):
 
 
 class FormularioEdicaoUsuario(FormularioEstilizado, forms.ModelForm):
-    """Edita um usuário sem permitir o autobloqueio do administrador."""
+    """
+    Formulário para edição de usuários por administradores.
+    Contém proteção contra auto-desativação e revogação do próprio acesso administrativo.
+    """
 
     nova_senha = forms.CharField(
         label="Nova senha",
@@ -71,9 +81,7 @@ class FormularioEdicaoUsuario(FormularioEstilizado, forms.ModelForm):
 
     class Meta:
         model = Usuario
-
         fields = ("first_name", "last_name", "email", "is_staff", "is_active")
-
         labels = {
             "first_name": "Nome",
             "last_name": "Sobrenome",
@@ -82,11 +90,12 @@ class FormularioEdicaoUsuario(FormularioEstilizado, forms.ModelForm):
         }
 
     def __init__(self, *args, usuario_logado=None, **kwargs):
+        # Armazena o usuário atualmente autenticado para validar permissões de auto-edição
         self.usuario_logado = usuario_logado
-
         super().__init__(*args, **kwargs)
 
     def clean(self):
+        """Impede que o administrador logado desative a si próprio ou remova seu acesso admin."""
         dados = super().clean()
 
         if self.instance == self.usuario_logado:
@@ -99,6 +108,7 @@ class FormularioEdicaoUsuario(FormularioEstilizado, forms.ModelForm):
         return dados
 
     def save(self, commit=True):
+        """Atualiza os dados do usuário e reaplica o hash da senha somente se uma nova senha for fornecida."""
         usuario = super().save(commit=False)
 
         if self.cleaned_data.get("nova_senha"):
@@ -111,6 +121,10 @@ class FormularioEdicaoUsuario(FormularioEstilizado, forms.ModelForm):
 
 
 class FormularioPerfil(FormularioEstilizado, forms.ModelForm):
+    """
+    Formulário de autoatendimento onde o próprio usuário atualiza seus dados
+    pessoais e pode opcionalmente alterar sua senha.
+    """
     nova_senha = forms.CharField(
         label="Nova senha",
         required=False,
@@ -127,12 +141,11 @@ class FormularioPerfil(FormularioEstilizado, forms.ModelForm):
 
     class Meta:
         model = Usuario
-
         fields = ("first_name", "last_name", "email")
-
         labels = {"first_name": "Nome", "last_name": "Sobrenome"}
 
     def clean(self):
+        """Garante a coincidência das senhas quando a troca de senha é solicitada."""
         dados = super().clean()
 
         if dados.get("nova_senha") != dados.get("confirmar_senha"):
@@ -141,6 +154,7 @@ class FormularioPerfil(FormularioEstilizado, forms.ModelForm):
         return dados
 
     def save(self, commit=True):
+        """Salva as informações do perfil e atualiza a senha caso solicitada."""
         usuario = super().save(commit=False)
 
         if self.cleaned_data.get("nova_senha"):

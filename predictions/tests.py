@@ -14,11 +14,22 @@ from predictions.services import gerar_leitura_ambiental, nivel_confianca, proce
 
 
 class TestesServicoPredicao(TestCase):
+    """
+    Suíte de testes de integração e unidade para o serviço de predição (`processar_captura`).
+    Valida regras de negócio para geração de alertas, idempotência do processamento,
+    mapeamento de níveis de confiança e persistência de dados de inferência.
+    """
+
     def setUp(self):
+        """
+        Configura o ambiente de testes criando diretórios temporários para os arquivos
+        de mídia (`MEDIA_ROOT`) e resultados das inferências (`RESULTS_ROOT`).
+        """
         self.pasta_midia = tempfile.TemporaryDirectory()
 
         self.pasta_resultados = tempfile.TemporaryDirectory()
 
+        # Sobrescreve as configurações de caminhos de arquivos para isolar os testes do ambiente real
         self.configuracoes = override_settings(
             MEDIA_ROOT=self.pasta_midia.name,
             RESULTS_ROOT=self.pasta_resultados.name,
@@ -34,6 +45,9 @@ class TestesServicoPredicao(TestCase):
         self.quantidade_execucoes = 0
 
     def tearDown(self):
+        """
+        Limpa os diretórios temporários e restaura as configurações do Django.
+        """
         self.configuracoes.disable()
 
         self.pasta_midia.cleanup()
@@ -42,6 +56,9 @@ class TestesServicoPredicao(TestCase):
 
     @staticmethod
     def _imagem_jpeg(nome="folha.jpg"):
+        """
+        Gera em memória um arquivo de imagem JPEG válido (32x32) para testes.
+        """
         conteudo = BytesIO()
 
         Image.new("RGB", (32, 32), color=(40, 150, 60)).save(conteudo, format="JPEG")
@@ -49,6 +66,9 @@ class TestesServicoPredicao(TestCase):
         return SimpleUploadedFile(nome, conteudo.getvalue(), content_type="image/jpeg")
 
     def captura_com_umidade(self, umidade, temperatura=25):
+        """
+        Helper para criar um registro de Captura com leitura ambiental vinculada.
+        """
         captura = Captura.objects.create(
             usuario=self.usuario,
             origem=Captura.Origem.MANUAL,
@@ -65,11 +85,17 @@ class TestesServicoPredicao(TestCase):
         confianca=90,
         status="segmentada",
     ):
+        """
+        Fábrica de mock do executor de análise de IA.
+        Simula a criação de artefatos de saída no sistema de arquivos e a estrutura
+        de resposta da inferência real (MobileSAM + MobileNetV2).
+        """
         def executar(_):
             self.quantidade_execucoes += 1
 
             id_execucao = f"20261001_120000_{self.quantidade_execucoes:08d}"
 
+            # Cria estrutura física de diretórios simulando a saída da IA
             pasta = Path(self.pasta_resultados.name) / id_execucao / "preprocessamento"
 
             pasta.mkdir(parents=True)
@@ -113,6 +139,12 @@ class TestesServicoPredicao(TestCase):
         return executar
 
     def test_limites_confianca(self):
+        """
+        Valida se a função `nivel_confianca` categoriza corretamente as faixas:
+        - Confiança < 60%: baixa
+        - 60% <= Confiança < 80%: media
+        - Confiança >= 80%: alta
+        """
         self.assertEqual(nivel_confianca("59.99"), "baixa")
 
         self.assertEqual(nivel_confianca("60"), "media")
@@ -122,6 +154,10 @@ class TestesServicoPredicao(TestCase):
         self.assertEqual(nivel_confianca("80"), "alta")
 
     def test_baixa_confianca_tem_prioridade_sobre_alerta_ambiental(self):
+        """
+        Garante que, em casos de baixa confiança da IA (<60%), o alerta de
+        `BAIXA_CONFIANCA` seja gerado prioritariamente, suprimindo o de risco ambiental.
+        """
         predicao, criada = processar_captura(
             self.captura_com_umidade(90),
             executor_analise=self.executor(confianca=59),
@@ -135,6 +171,10 @@ class TestesServicoPredicao(TestCase):
         )
 
     def test_doenca_com_confianca_e_umidade_altas_cria_apenas_alerta_critico(self):
+        """
+        Garante que a detecção de doença combinada com alta umidade resulta
+        exclusivamente na criação de um alerta do tipo `CRITICO`.
+        """
         predicao, _ = processar_captura(
             self.captura_com_umidade(85),
             executor_analise=self.executor(classe="Tomato___Late_blight", confianca=80),
@@ -146,6 +186,10 @@ class TestesServicoPredicao(TestCase):
         )
 
     def test_saudavel_com_umidade_alta_cria_alerta_ambiental(self):
+        """
+        Garante que a identificação de planta saudável associada a alta umidade
+        cria apenas um alerta preventivo do tipo `AMBIENTAL`.
+        """
         predicao, _ = processar_captura(
             self.captura_com_umidade(90),
             executor_analise=self.executor(classe="Tomato___healthy", confianca=90),
@@ -157,6 +201,10 @@ class TestesServicoPredicao(TestCase):
         )
 
     def test_processamento_e_idempotente(self):
+        """
+        Valida se reprocessar uma mesma captura reusa a predição existente
+        sem reexecutar o pipeline de IA (idempotência).
+        """
         captura = self.captura_com_umidade(60)
 
         primeira, primeira_criada = processar_captura(
@@ -175,9 +223,14 @@ class TestesServicoPredicao(TestCase):
 
         self.assertEqual(primeira.pk, segunda.pk)
 
+        # Garante que o executor de IA só foi chamado uma única vez
         self.assertEqual(self.quantidade_execucoes, 1)
 
     def test_fallback_e_tempos_sao_persistidos(self):
+        """
+        Verifica se métricas de tempo de inferência, status de pré-processamento
+        e justificativas de fallback da ROI são salvas corretamente no modelo.
+        """
         predicao, _ = processar_captura(
             self.captura_com_umidade(70),
             executor_analise=self.executor(status="fallback_roi"),
