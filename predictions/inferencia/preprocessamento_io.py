@@ -28,6 +28,23 @@ def salvar_imagem(caminho: Path, imagem: np.ndarray) -> None:
     dados.tofile(caminho)
 
 
+def metricas(imagem: np.ndarray) -> tuple[float, float, float, float]:
+
+    analise = cv2.resize(imagem, (256, 256), interpolation=cv2.INTER_AREA)
+
+    cinza = cv2.cvtColor(analise, cv2.COLOR_BGR2GRAY)
+
+    foco = float(cv2.Laplacian(cinza, cv2.CV_64F).var())
+
+    brilho = float(cinza.mean())
+
+    pixels_escuros = float(np.mean(cinza <= 15) * 100)
+
+    pixels_claros = float(np.mean(cinza >= 245) * 100)
+
+    return foco, brilho, pixels_escuros, pixels_claros
+
+
 def painel_com_rotulo(
     imagem: np.ndarray,
     rotulo: str,

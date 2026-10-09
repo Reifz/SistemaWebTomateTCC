@@ -1,10 +1,13 @@
+import tempfile
 from datetime import timedelta
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from alerts.models import Alerta
 from captures.models import Captura
@@ -66,6 +69,55 @@ class TestesPainel(TestCase):
                 self.assertNotIn("`r`n", conteudo)
 
                 self.assertFalse(conteudo.endswith("\n\n"))
+
+    def test_resultado_manual_aceita_png_novo_e_jpeg_historico(self):
+        usuario = get_user_model().objects.create_user(
+            email="artefatos@example.com",
+            password="test-pass-123",
+        )
+
+        self.client.force_login(usuario)
+
+        with tempfile.TemporaryDirectory() as pasta_resultados, override_settings(
+            RESULTS_ROOT=pasta_resultados
+        ):
+            casos = (
+                (
+                    "execucao_nova",
+                    "imagem_processada_visual.png",
+                    "image/png",
+                ),
+                (
+                    "execucao_historica",
+                    "imagem_processada.jpg",
+                    "image/jpeg",
+                ),
+            )
+
+            for id_execucao, nome_arquivo, tipo_conteudo in casos:
+                with self.subTest(id_execucao=id_execucao):
+                    pasta_preprocessamento = (
+                        Path(pasta_resultados) / id_execucao / "preprocessamento"
+                    )
+
+                    pasta_preprocessamento.mkdir(parents=True)
+
+                    Image.new("RGB", (16, 16), color=(40, 150, 60)).save(
+                        pasta_preprocessamento / nome_arquivo
+                    )
+
+                    resposta = self.client.get(
+                        reverse(
+                            "imagem_resultado_manual",
+                            args=(id_execucao, "processed"),
+                        )
+                    )
+
+                    self.assertEqual(resposta.status_code, 200)
+
+                    self.assertEqual(resposta["Content-Type"], tipo_conteudo)
+
+                    resposta.close()
 
     def test_inicio_renderiza_apos_login(self):
         """

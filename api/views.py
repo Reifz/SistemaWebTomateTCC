@@ -1,3 +1,4 @@
+import mimetypes
 from pathlib import Path
 
 from django.conf import settings
@@ -127,7 +128,9 @@ class VisaoArtefatoPredicao(APIView):
         if not caminho.is_relative_to(raiz) or not caminho.is_file():
             raise Http404
 
-        return FileResponse(caminho.open("rb"), content_type="image/jpeg")
+        tipo_conteudo, _ = mimetypes.guess_type(caminho.name)
+
+        return FileResponse(caminho.open("rb"), content_type=tipo_conteudo or "application/octet-stream")
 
 
 @method_decorator(csrf_exempt, name='dispatch')

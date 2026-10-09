@@ -1,5 +1,6 @@
 import tempfile
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -150,3 +151,50 @@ class TestesApi(TestCase):
                 "environmental_reading",
             }.issubset(resposta.data)
         )
+
+    def test_artefatos_preservam_tipos_png_e_jpeg(self):
+        self.client.force_authenticate(self.usuario)
+
+        with tempfile.TemporaryDirectory() as pasta_resultados, override_settings(
+            RESULTS_ROOT=pasta_resultados
+        ):
+            for indice, (extensao, tipo_conteudo) in enumerate(
+                (("png", "image/png"), ("jpg", "image/jpeg")),
+                start=1,
+            ):
+                with self.subTest(extensao=extensao):
+                    caminho_relativo = Path(
+                        f"execucao_{indice}/preprocessamento/imagem_processada.{extensao}"
+                    )
+
+                    caminho_absoluto = Path(pasta_resultados) / caminho_relativo
+
+                    caminho_absoluto.parent.mkdir(parents=True)
+
+                    Image.new("RGB", (16, 16), color=(40, 150, 60)).save(
+                        caminho_absoluto
+                    )
+
+                    captura = Captura.objects.create(usuario=self.usuario)
+
+                    predicao = Predicao.objects.create(
+                        captura=captura,
+                        classe_prevista="Tomato___healthy",
+                        confianca=99,
+                        tres_principais=[{}, {}, {}],
+                        nivel_confianca=Predicao.NivelConfianca.ALTA,
+                        caminho_imagem_processada=caminho_relativo.as_posix(),
+                    )
+
+                    resposta = self.client.get(
+                        reverse(
+                            "api_artefato_predicao",
+                            args=(predicao.pk, "processed"),
+                        )
+                    )
+
+                    self.assertEqual(resposta.status_code, 200)
+
+                    self.assertEqual(resposta["Content-Type"], tipo_conteudo)
+
+                    resposta.close()

@@ -23,7 +23,7 @@ from .classificador import (
     classificar,
     salvar_classificacao,
 )
-from .preprocessamento import ResultadoProcessamento, processar_imagem
+from .preprocessamento_principal import ResultadoProcessamento, processar_imagem
 
 NOME_MODELO = "MobileNetV2_Tomato_Modelo_B_v5"
 
@@ -58,6 +58,8 @@ class ResultadoAnalise:
     arquivo_original: str
 
     arquivo_analisado: str
+
+    arquivo_visual: str
 
     preprocessamento: ResultadoProcessamento
 
@@ -168,7 +170,7 @@ def analisar(
         resultado_classificacao = classificar(
             recursos.modelo_predicao,
             recursos.classes,
-            resultado_preprocessamento.arquivo_saida,
+            resultado_preprocessamento.arquivo_modelo,
         )
 
         salvar_classificacao(resultado_classificacao, pasta / "predicao.json")
@@ -177,7 +179,8 @@ def analisar(
             id_execucao=id_execucao,
             pasta_execucao=str(pasta.resolve()),
             arquivo_original=str(origem.resolve()),
-            arquivo_analisado=resultado_preprocessamento.arquivo_saida,
+            arquivo_analisado=resultado_preprocessamento.arquivo_modelo,
+            arquivo_visual=resultado_preprocessamento.arquivo_visual,
             preprocessamento=resultado_preprocessamento,
             classificacao=resultado_classificacao,
             aviso_fallback=resultado_preprocessamento.status == "fallback_roi",

@@ -37,6 +37,7 @@ ARQUIVOS_LOGICA_PYTHON = (
     "predictions/inferencia/classificador.py",
     "predictions/inferencia/pipeline.py",
     "predictions/inferencia/preprocessamento.py",
+    "predictions/inferencia/preprocessamento_principal.py",
     "predictions/inferencia/preprocessamento_io.py",
     "predictions/management/commands/limpar_resultados_ia.py",
     "predictions/management/commands/validar_ia_real.py",

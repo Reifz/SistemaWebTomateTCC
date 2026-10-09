@@ -62,7 +62,7 @@ def imagem_resultado_manual(request, id_execucao, tipo_imagem):
 
     nomes_arquivos = {
         "original": ("imagem_original.jpeg", "image/jpeg"),
-        "processed": ("preprocessamento/imagem_processada.jpg", "image/jpeg"),
+        "processed": ("preprocessamento/imagem_processada_visual.png", "image/png"),
         "guide": ("preprocessamento/imagem_com_guia.jpg", "image/jpeg"),
     }
 
@@ -71,9 +71,16 @@ def imagem_resultado_manual(request, id_execucao, tipo_imagem):
 
     raiz = Path(settings.RESULTS_ROOT).resolve()
 
-    caminho_imagem = (raiz / id_execucao / nomes_arquivos[tipo_imagem][0]).resolve()
+    nome_arquivo, tipo_conteudo = nomes_arquivos[tipo_imagem]
+
+    caminho_imagem = (raiz / id_execucao / nome_arquivo).resolve()
+
+    if tipo_imagem == "processed" and not caminho_imagem.is_file():
+        caminho_imagem = (raiz / id_execucao / "preprocessamento/imagem_processada.jpg").resolve()
+
+        tipo_conteudo = "image/jpeg"
 
     if raiz not in caminho_imagem.parents or not caminho_imagem.is_file():
         raise Http404
 
-    return FileResponse(caminho_imagem.open("rb"), content_type=nomes_arquivos[tipo_imagem][1])
+    return FileResponse(caminho_imagem.open("rb"), content_type=tipo_conteudo)
