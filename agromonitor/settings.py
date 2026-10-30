@@ -1,11 +1,35 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-development-only-change-me")
+load_dotenv(BASE_DIR / ".env")
+
+
+def variavel_obrigatoria(nome):
+    valor = os.environ.get(nome)
+
+    if not valor:
+        raise ImproperlyConfigured(f"Defina a variável de ambiente obrigatória {nome}.")
+
+    return valor
+
+
+SECRET_KEY = variavel_obrigatoria("DJANGO_SECRET_KEY")
+SECRET_KEY_FALLBACKS = [
+    chave
+    for chave in os.environ.get("DJANGO_SECRET_KEY_FALLBACKS", "").split(",")
+    if chave
+]
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # Ative estas opções somente quando a aplicação estiver publicada atrás de HTTPS.
@@ -58,18 +82,26 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = "agromonitor.wsgi.application"
 
-if os.environ.get("DB_ENGINE") == "mysql":
-    DATABASES = {"default": {
+NOME_BANCO = variavel_obrigatoria("DB_NAME")
+
+DATABASES = {
+    "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DB_NAME", "agromonitor"),
-        "USER": os.environ.get("DB_USER", "root"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "NAME": NOME_BANCO,
+        "USER": variavel_obrigatoria("DB_USER"),
+        "PASSWORD": variavel_obrigatoria("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "3306"),
-        "OPTIONS": {"charset": "utf8mb4"},
-    }}
-else:
-    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'",
+            "isolation_level": "read committed",
+        },
+        "TEST": {
+            "NAME": os.environ.get("DB_TEST_NAME", f"test_{NOME_BANCO}"),
+        },
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

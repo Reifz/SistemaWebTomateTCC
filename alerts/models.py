@@ -12,6 +12,8 @@ class Alerta(models.Model):
 
         CRITICO = "critico", "Crítico"
 
+        ERRO_LEITURA = "erro_leitura", "Erro de leitura"
+
     class Severidade(models.TextChoices):
         BAIXA = "baixa", "Baixa"
 

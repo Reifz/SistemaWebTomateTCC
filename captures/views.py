@@ -67,13 +67,14 @@ def criar_captura(request):
 
         captura.save()
 
-        gerar_leitura_ambiental(
-            captura,
-            formulario.cleaned_data.get("temperatura"),
-            formulario.cleaned_data.get("umidade"),
-        )
+        temperatura = formulario.cleaned_data.get("temperatura")
 
-        messages.success(request, "Captura cadastrada com leitura ambiental.")
+        umidade = formulario.cleaned_data.get("umidade")
+
+        if temperatura is not None and umidade is not None:
+            gerar_leitura_ambiental(captura, temperatura, umidade)
+
+        messages.success(request, "Captura cadastrada.")
 
         return redirect("detalhar_captura", id_captura=captura.pk)
 
@@ -100,7 +101,7 @@ def processar_captura_existente(request, id_captura):
     captura = get_object_or_404(capturas, pk=id_captura)
 
     try:
-        predicao, criada = processar_captura(captura)
+        predicao, criada = processar_captura(captura, reprocessar=True)
     except ProcessamentoEmAndamento as erro:
         messages.warning(request, str(erro))
 

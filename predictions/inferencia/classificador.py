@@ -110,6 +110,9 @@ def carregar_matriz_imagem(caminho: str | Path, tamanho: tuple[int, int]) -> np.
 def normalizar_probabilidades(valores: np.ndarray) -> np.ndarray:
     probabilidades = np.asarray(valores, dtype=np.float64).reshape(-1)
 
+    if probabilidades.size == 0 or not np.all(np.isfinite(probabilidades)):
+        raise ValueError("A saída do modelo contém probabilidades inválidas.")
+
     soma = float(probabilidades.sum())
 
     if np.any(probabilidades < 0) or not 0.98 <= soma <= 1.02:

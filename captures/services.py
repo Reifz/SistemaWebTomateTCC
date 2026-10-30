@@ -1,4 +1,5 @@
 import random
+import shutil
 from pathlib import Path
 
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.db import transaction
 
 from alerts.models import Alerta
 from predictions.models import Predicao
-from predictions.services import gerar_leitura_ambiental, processar_captura
+from predictions.services import gerar_leitura_ambiental_demonstrativa, processar_captura
 from sensors.models import LeituraAmbiental
 
 from .models import Captura
@@ -52,7 +53,7 @@ def inserir_dados_demonstrativos(usuarios, quantidade=12):
 
                     arquivos_criados.append((captura.imagem.storage, captura.imagem.name))
 
-                gerar_leitura_ambiental(captura, gerador=gerador)
+                gerar_leitura_ambiental_demonstrativa(captura, gerador=gerador)
 
                 processar_captura(captura)
 
@@ -90,8 +91,8 @@ def truncar_dados_operacionais():
 
         Captura.objects.all().delete()
 
-        # Evita perder as imagens caso o banco reverta a transação.
-        transaction.on_commit(lambda: _excluir_arquivos(imagens))
+        # Evita perder arquivos caso o banco reverta a transação.
+        transaction.on_commit(lambda: _limpar_arquivos_operacionais(imagens))
 
     return totais
 
@@ -99,3 +100,31 @@ def truncar_dados_operacionais():
 def _excluir_arquivos(imagens):
     for armazenamento, nome in imagens:
         armazenamento.delete(nome)
+
+
+def _limpar_arquivos_operacionais(imagens):
+    _excluir_arquivos(imagens)
+
+    _excluir_artefatos_resultados()
+
+
+def _excluir_artefatos_resultados():
+    raiz = Path(settings.RESULTS_ROOT).resolve()
+
+    diretorios_proibidos = {
+        Path(raiz.anchor).resolve(),
+        Path.home().resolve(),
+        Path(settings.BASE_DIR).resolve(),
+    }
+
+    if raiz in diretorios_proibidos or not raiz.is_dir():
+        return
+
+    for item in raiz.iterdir():
+        if item.name == ".gitkeep":
+            continue
+
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()

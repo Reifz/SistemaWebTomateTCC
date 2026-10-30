@@ -253,7 +253,6 @@ body {
   margin: 0;
 }
 .corpo-cartao-captura {
-  flex: 1;
   padding: 1.25rem;
 }
 .corpo-resumo-captura {
@@ -261,10 +260,36 @@ body {
   flex-direction: column;
   gap: 1.25rem;
 }
-.imagem-captura {
-  aspect-ratio: 4 / 3;
+.moldura-imagem-captura {
+  align-items: center;
+  background: #f7faf8;
   border-radius: 0.65rem;
-  object-fit: cover;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  width: 100%;
+}
+.moldura-imagem-original,
+.imagem-captura-original {
+  max-height: 32rem;
+}
+.moldura-imagem-analise,
+.imagem-captura-analise {
+  max-height: 20rem;
+}
+.imagem-captura-original,
+.imagem-captura-analise {
+  display: block;
+  height: auto;
+  object-fit: contain;
+  width: 100%;
+}
+.grade-imagens-analise > div {
+  min-width: 0;
+}
+.grade-imagens-analise small {
+  display: block;
+  margin-top: 0.35rem;
 }
 .metadados-captura {
   display: grid;
@@ -291,9 +316,9 @@ body {
   margin: 0;
 }
 .pilha-cartoes-captura {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  grid-auto-rows: minmax(0, 1fr);
 }
 .valores-ambientais {
   display: grid;
@@ -513,6 +538,14 @@ a:hover {
   }
   .navbar-text {
     display: none;
+  }
+  .moldura-imagem-original,
+  .imagem-captura-original {
+    max-height: 24rem;
+  }
+  .moldura-imagem-analise,
+  .imagem-captura-analise {
+    max-height: 18rem;
   }
 }
 

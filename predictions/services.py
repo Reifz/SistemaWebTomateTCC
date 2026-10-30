@@ -1,5 +1,6 @@
 import logging
 import random
+import shutil
 import threading
 from decimal import Decimal
 from pathlib import Path
@@ -29,7 +30,7 @@ class ImagemInvalida(ErroProcessamento):
 
 
 class LeituraInvalida(ErroProcessamento):
-    """A leitura ambiental está fora das faixas definidas no TCC."""
+    """Compatibilidade para integrações que tratam erros de leitura."""
 
 
 class ProcessamentoEmAndamento(ErroProcessamento):
@@ -61,19 +62,25 @@ def nivel_confianca(confianca):
     return Predicao.NivelConfianca.ALTA
 
 
-def gerar_leitura_ambiental(captura, temperatura=None, umidade=None, gerador=None):
-    """Registra a leitura informada ou gera valores somente para dados demonstrativos."""
-
-    gerador = gerador or random.SystemRandom()
-
-    temperatura = temperatura if temperatura is not None else round(gerador.uniform(18, 35), 2)
-
-    umidade = umidade if umidade is not None else round(gerador.uniform(50, 95), 2)
+def gerar_leitura_ambiental(captura, temperatura, umidade):
+    """Registra uma leitura ambiental informada para a captura."""
 
     return LeituraAmbiental.objects.create(
         captura=captura,
         temperatura=temperatura,
         umidade=umidade,
+    )
+
+
+def gerar_leitura_ambiental_demonstrativa(captura, gerador=None):
+    """Gera valores plausíveis exclusivamente para dados demonstrativos."""
+
+    gerador = gerador or random.SystemRandom()
+
+    return gerar_leitura_ambiental(
+        captura,
+        round(gerador.uniform(18, 35), 2),
+        round(gerador.uniform(50, 95), 2),
     )
 
 
@@ -92,17 +99,6 @@ def _validar_captura(captura):
     except (OSError, UnidentifiedImageError) as erro:
         raise ImagemInvalida("A imagem está inválida ou corrompida.") from erro
 
-    leitura = getattr(captura, "leitura_ambiental", None)
-
-    if leitura is None:
-        return
-
-    if not Decimal("0") <= leitura.temperatura <= Decimal("60"):
-        raise LeituraInvalida("A temperatura deve estar entre 0 °C e 60 °C.")
-
-    if not Decimal("0") <= leitura.umidade <= Decimal("100"):
-        raise LeituraInvalida("A umidade deve estar entre 0% e 100%.")
-
 
 def _caminho_relativo_resultado(caminho):
     return Path(caminho).resolve().relative_to(Path(settings.RESULTS_ROOT).resolve()).as_posix()
@@ -114,7 +110,33 @@ def _marcar_erro(id_captura):
     ).update(status=Captura.Status.ERRO)
 
 
-def processar_captura(captura, executor_analise=None):
+def _remover_artefatos_execucao(id_execucao):
+    if not id_execucao:
+        return
+
+    raiz = Path(settings.RESULTS_ROOT).resolve()
+
+    pasta = (raiz / id_execucao).resolve()
+
+    if pasta == raiz or not pasta.is_relative_to(raiz):
+        registrador.error(
+            "Remoção dos artefatos recusada por caminho inseguro: %s.",
+            pasta,
+        )
+
+        return
+
+    if pasta.is_dir():
+        try:
+            shutil.rmtree(pasta)
+        except OSError:
+            registrador.exception(
+                "Não foi possível remover os artefatos antigos em %s.",
+                pasta,
+            )
+
+
+def processar_captura(captura, executor_analise=None, reprocessar=False):
     """Executa MobileSAM e MobileNetV2, persistindo um único resultado por captura."""
 
     executor = executor_analise or executar_analise_real
@@ -129,11 +151,11 @@ def processar_captura(captura, executor_analise=None):
                 captura=captura_bloqueada
             ).first()
 
-            if predicao_existente:
-                return predicao_existente, False
-
             if captura_bloqueada.status == Captura.Status.PROCESSANDO:
                 raise ProcessamentoEmAndamento("A captura já está sendo processada.")
+
+            if predicao_existente and not reprocessar:
+                return predicao_existente, False
 
             _validar_captura(captura_bloqueada)
 
@@ -142,8 +164,11 @@ def processar_captura(captura, executor_analise=None):
             captura_bloqueada.save(update_fields=["status"])
     except ProcessamentoEmAndamento:
         raise
-    except (ImagemInvalida, LeituraInvalida):
-        _marcar_erro(captura.pk)
+    except ImagemInvalida:
+        if reprocessar:
+            Captura.objects.filter(pk=captura.pk).update(status=Captura.Status.ERRO)
+        else:
+            _marcar_erro(captura.pk)
 
         raise
 
@@ -166,38 +191,62 @@ def processar_captura(captura, executor_analise=None):
         for item in classificacao.principais_predicoes[:3]
     ]
 
-    with transaction.atomic():
-        captura_bloqueada = Captura.objects.select_for_update().get(pk=captura.pk)
+    try:
+        with transaction.atomic():
+            captura_bloqueada = Captura.objects.select_for_update().get(pk=captura.pk)
 
-        predicao_existente = Predicao.objects.filter(
-            captura=captura_bloqueada
-        ).first()
+            predicao_existente = Predicao.objects.filter(
+                captura=captura_bloqueada
+            ).first()
 
-        if predicao_existente:
-            return predicao_existente, False
+            if predicao_existente and not reprocessar:
+                return predicao_existente, False
 
-        predicao = Predicao.objects.create(
-            captura=captura_bloqueada,
-            classe_prevista=classificacao.classe_prevista,
-            confianca=Decimal(str(classificacao.confianca_percentual)).quantize(Decimal("0.01")),
-            tres_principais=tres_principais,
-            nivel_confianca=nivel_confianca(classificacao.confianca_percentual),
-            modelo_utilizado=NOME_MODELO,
-            id_execucao=resultado.id_execucao,
-            status_preprocessamento=resultado.preprocessamento.status,
-            caminho_imagem_processada=_caminho_relativo_resultado(resultado.preprocessamento.arquivo_visual),
-            caminho_imagem_guia=_caminho_relativo_resultado(resultado.preprocessamento.arquivo_guia),
-            tempo_inferencia_ms=classificacao.tempo_inferencia_ms,
-            tempo_mobilesam_ms=Decimal(str(resultado.tempo_mobilesam_ms)),
-            dispositivo_processamento=resultado.preprocessamento.dispositivo,
-            motivos_fallback=resultado.preprocessamento.motivos,
+            id_execucao_anterior = None
+
+            if predicao_existente:
+                id_execucao_anterior = predicao_existente.id_execucao
+
+                predicao_existente.delete()
+
+            predicao = Predicao.objects.create(
+                captura=captura_bloqueada,
+                classe_prevista=classificacao.classe_prevista,
+                confianca=Decimal(str(classificacao.confianca_percentual)).quantize(Decimal("0.01")),
+                tres_principais=tres_principais,
+                nivel_confianca=nivel_confianca(classificacao.confianca_percentual),
+                modelo_utilizado=NOME_MODELO,
+                id_execucao=resultado.id_execucao,
+                status_preprocessamento=resultado.preprocessamento.status,
+                caminho_imagem_processada=_caminho_relativo_resultado(resultado.preprocessamento.arquivo_visual),
+                caminho_imagem_guia=_caminho_relativo_resultado(resultado.preprocessamento.arquivo_guia),
+                tempo_inferencia_ms=classificacao.tempo_inferencia_ms,
+                tempo_mobilesam_ms=Decimal(str(resultado.tempo_mobilesam_ms)),
+                dispositivo_processamento=resultado.preprocessamento.dispositivo,
+                motivos_fallback=resultado.preprocessamento.motivos,
+            )
+
+            criar_alertas_da_predicao(predicao)
+
+            captura_bloqueada.status = Captura.Status.PROCESSADA
+
+            captura_bloqueada.save(update_fields=["status"])
+
+            if id_execucao_anterior and id_execucao_anterior != resultado.id_execucao:
+                transaction.on_commit(
+                    lambda id_execucao=id_execucao_anterior: (
+                        _remover_artefatos_execucao(id_execucao)
+                    )
+                )
+    except Exception:
+        _marcar_erro(captura.pk)
+
+        registrador.exception(
+            "Falha ao persistir a análise da captura %s.",
+            captura.pk,
         )
 
-        criar_alertas_da_predicao(predicao)
-
-        captura_bloqueada.status = Captura.Status.PROCESSADA
-
-        captura_bloqueada.save(update_fields=["status"])
+        raise
 
     registrador.info(
         "Inferência concluída para a captura %s em %s ms; MobileSAM em %s ms.",
