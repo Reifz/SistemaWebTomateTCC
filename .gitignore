@@ -18,6 +18,7 @@ htmlcov/
 .vscode/
 *.log
 *.md
+!README.md
 docs/
 evidencias/
 fotos_nao_controladas/
