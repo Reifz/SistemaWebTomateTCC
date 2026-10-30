@@ -1,4 +1,4 @@
-# AgroMonitor — MVP do TCC
+# Tomate Monitor - Projeto do TCC
 
 Sistema web para monitoramento agrícola e detecção precoce de doenças em folhas de
 tomate. A aplicação registra capturas e leituras ambientais, processa imagens com
