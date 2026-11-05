@@ -1,11 +1,20 @@
 from django.contrib import admin
-from .models import Predicao
+from .models import Predicao, ResultadoIA
+
+
+class ResultadoIAInline(admin.TabularInline):
+    model = ResultadoIA
+
+    extra = 0
 
 
 @admin.register(Predicao)
 class AdministracaoPredicao(admin.ModelAdmin):
+    inlines = (ResultadoIAInline,)
+
     list_display = (
         "captura",
+        "dispositivo",
         "classe_prevista",
         "confianca",
         "nivel_confianca",

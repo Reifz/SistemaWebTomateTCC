@@ -59,6 +59,11 @@
                 <span class="badge rounded-pill bg-danger">{{ quantidade_alertas_nao_lidos }}</span>
               </a>
               {% if user.is_staff %}
+                <a class="nav-link {% if 'dispositivo' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'lista_dispositivos' %}">
+                  <i class="fa-solid fa-microchip icone-navegacao" aria-hidden="true"></i>
+                  <b>Dispositivos</b>
+                </a>
                 <a class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}"
                    href="{% url 'lista_usuarios' %}">
                   <i class="fa-solid fa-users icone-navegacao" aria-hidden="true"></i>

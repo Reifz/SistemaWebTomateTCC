@@ -27,7 +27,7 @@ def _consulta_sem_pagina(request):
 def listar_capturas(request):
     capturas = Captura.objects.all() if request.user.is_staff else request.user.capturas.all()
 
-    capturas = capturas.select_related("leitura_ambiental", "predicao", "usuario")
+    capturas = capturas.select_related("leitura_ambiental", "predicao", "usuario", "dispositivo")
 
     if request.GET.get("q"):
         capturas = capturas.filter(observacao__icontains=request.GET["q"])
@@ -58,12 +58,15 @@ def listar_capturas(request):
 
 @login_required
 def criar_captura(request):
-    formulario = FormularioCaptura(request.POST or None, request.FILES or None)
+    formulario = FormularioCaptura(request.POST or None, request.FILES or None, usuario=request.user)
 
     if request.method == "POST" and formulario.is_valid():
         captura = formulario.save(commit=False)
 
-        captura.usuario = request.user
+        if request.user.is_staff and captura.dispositivo_id:
+            captura.usuario = captura.dispositivo.usuario
+        else:
+            captura.usuario = request.user
 
         captura.save()
 
@@ -86,7 +89,7 @@ def detalhar_captura(request, id_captura):
     capturas = Captura.objects.all() if request.user.is_staff else request.user.capturas.all()
 
     captura = get_object_or_404(
-        capturas.select_related("leitura_ambiental", "predicao", "usuario"),
+        capturas.select_related("leitura_ambiental", "predicao", "usuario", "dispositivo"),
         pk=id_captura,
     )
 

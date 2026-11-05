@@ -7,7 +7,7 @@ from predictions.models import Predicao
 
 
 class SerializadorEntradaCaptura(serializers.Serializer):
-    # Contrato previsto para POST /api/captures/. O ESP32-CAM deverá enviar estes
+    # O ESP32-CAM deverá enviar estes
     # campos como multipart/form-data.
     image = serializers.ImageField()
 
@@ -16,6 +16,8 @@ class SerializadorEntradaCaptura(serializers.Serializer):
     temperature = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=60)
 
     humidity = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=100)
+
+    device_identifier = serializers.CharField(required=False, allow_blank=False, max_length=100, trim_whitespace=True)
 
     def validate_image(self, imagem):
         if getattr(imagem, "content_type", "") not in ("image/jpeg", "image/jpg"):
@@ -136,6 +138,8 @@ class SerializadorPredicao(serializers.ModelSerializer):
 
 
 class SerializadorCaptura(serializers.ModelSerializer):
+    device_identifier = serializers.CharField(source="dispositivo.identificador", read_only=True)
+
     origin = serializers.CharField(source="origem", read_only=True)
 
     observation = serializers.CharField(source="observacao", read_only=True)
@@ -147,7 +151,7 @@ class SerializadorCaptura(serializers.ModelSerializer):
     class Meta:
         model = Captura
 
-        fields = ("id", "origin", "status", "observation", "captured_at", "environmental_reading")
+        fields = ("id", "device_identifier", "origin", "status", "observation", "captured_at", "environmental_reading")
 
     def obter_leitura_ambiental(self, captura):
         leitura = getattr(captura, "leitura_ambiental", None)

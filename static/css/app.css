@@ -274,22 +274,58 @@ body {
   max-height: 32rem;
 }
 .moldura-imagem-analise,
+.link-imagem-analise,
 .imagem-captura-analise {
-  max-height: 20rem;
+  height: 20rem;
 }
-.imagem-captura-original,
-.imagem-captura-analise {
+.moldura-imagem-analise {
+  background: transparent;
+  border-radius: 0;
+}
+.imagem-captura-original {
   display: block;
   height: auto;
   object-fit: contain;
   width: 100%;
 }
-.grade-imagens-analise > div {
+.link-imagem-analise,
+.imagem-captura-analise {
+  display: block;
+  width: 100%;
+}
+.link-imagem-analise {
+  background: transparent;
+  border: 0;
+  cursor: zoom-in;
+  padding: 0;
+}
+.imagem-captura-analise {
+  object-fit: contain;
+}
+.grade-imagens-analise {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.item-imagem-analise {
   min-width: 0;
 }
 .grade-imagens-analise small {
   display: block;
   margin-top: 0.35rem;
+}
+.corpo-modal-imagem-analise {
+  background: #101713;
+  text-align: center;
+}
+.imagem-analise-modal {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  max-height: calc(100vh - 10rem);
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
 }
 .metadados-captura {
   display: grid;
@@ -544,8 +580,9 @@ a:hover {
     max-height: 24rem;
   }
   .moldura-imagem-analise,
+  .link-imagem-analise,
   .imagem-captura-analise {
-    max-height: 18rem;
+    height: 18rem;
   }
 }
 

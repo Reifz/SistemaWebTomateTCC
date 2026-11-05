@@ -30,7 +30,14 @@ ALLOWED_HOSTS = [
     for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+CSRF_TRUSTED_ORIGINS = [
+    origem.strip()
+    for origem in os.environ.get(
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        "http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",")
+    if origem.strip()
+]
 
 # Ative estas opções somente quando a aplicação estiver publicada atrás de HTTPS.
 SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "0") == "1"
@@ -50,6 +57,7 @@ INSTALLED_APPS = [
     "accounts",
     "dashboard",
     "captures",
+    "devices",
     "sensors",
     "predictions",
     "alerts",

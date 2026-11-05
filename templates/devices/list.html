@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Dispositivos | Tomate Monitor{% endblock %}
+{% block content %}
+  <section class="painel-pagina painel-cabecalho">
+    <div class="cabecalho-pagina">
+      <div>
+        <h1>Dispositivos</h1>
+      </div>
+      <a class="btn btn-success" href="{% url 'criar_dispositivo' %}">Novo dispositivo</a>
+    </div>
+    <form method="get" class="painel-filtro filtros-integrados">
+      <div class="campos-filtro">
+        <div class="campo-filtro campo-filtro-pesquisa">
+          <label>Pesquisar</label>
+          <input class="form-control"
+                 name="q"
+                 value="{{ request.GET.q }}"
+                 placeholder="Identificador, nome, local ou responsável">
+        </div>
+        <div class="campo-filtro">
+          <label>Situação</label>
+          <select class="form-select" name="status">
+            <option value="">Todas</option>
+            {% for value,label in status_dispositivos %}
+              <option value="{{ value }}"
+                      {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="acoes-filtro">
+        <button class="btn btn-dark btn-lg" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </section>
+  <section class="painel-pagina painel-conteudo">
+    <div class="cartao-conteudo cartao-conteudo-com-cabecalho">
+      <header class="card-header"><h2>Dispositivos cadastrados</h2></header>
+      <div class="card-body p-0 table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Identificador</th>
+              <th>Nome</th>
+              <th>Responsável</th>
+              <th>Localização</th>
+              <th>Situação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dispositivo in pagina %}
+              <tr>
+                <td><strong>{{ dispositivo.identificador }}</strong></td>
+                <td>{{ dispositivo.nome }}</td>
+                <td>{{ dispositivo.usuario }}</td>
+                <td>{{ dispositivo.localizacao|default:'Não informada' }}</td>
+                <td>
+                  <span class="rotulo-status{% if dispositivo.status == 'inactive' %} inativo{% endif %}">
+                    {{ dispositivo.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <a class="btn btn-success btn-sm"
+                     href="{% url 'editar_dispositivo' dispositivo.pk %}">Editar</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="estado-vazio">Nenhum dispositivo encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include 'includes/pagination.html' %}
+  </section>
+{% endblock %}

@@ -32,6 +32,10 @@
                 <div class="imagem-indisponivel">Imagem não disponível</div>
               {% endif %}
               <dl class="metadados-captura">
+                <div class="metadados-captura-largos">
+                  <dt>Dispositivo</dt>
+                  <dd>{{ captura.dispositivo.nome }} ({{ captura.dispositivo.identificador }})</dd>
+                </div>
                 <div>
                   <dt>Origem</dt>
                   <dd>{{ captura.rotulo_origem }}</dd>
@@ -95,22 +99,72 @@
             <header class="cabecalho-cartao-captura"><h2>Resultado da análise</h2></header>
             <div class="corpo-cartao-captura">
               {% if captura.predicao.caminho_imagem_processada %}
-                <div class="grade-imagens-analise row g-2 mb-3">
-                  <div class="col-lg-6">
+                <div class="grade-imagens-analise mb-3">
+                  <div class="item-imagem-analise">
                     <div class="moldura-imagem-captura moldura-imagem-analise">
-                      <img class="imagem-captura-analise img-fluid"
-                           src="{% url 'api_artefato_predicao' captura.predicao.pk 'processed' %}"
-                           alt="Folha processada pelo MobileSAM">
+                      <button class="link-imagem-analise"
+                              type="button"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modalImagemProcessada"
+                              aria-label="Ampliar imagem processada">
+                        <img class="imagem-captura-analise"
+                             src="{% url 'api_artefato_predicao' captura.predicao.pk 'processed' %}"
+                             alt="Folha processada pelo MobileSAM">
+                      </button>
                     </div>
                     <small class="text-muted">Imagem processada</small>
                   </div>
-                  <div class="col-lg-6">
+                  <div class="item-imagem-analise">
                     <div class="moldura-imagem-captura moldura-imagem-analise">
-                      <img class="imagem-captura-analise img-fluid"
-                           src="{% url 'api_artefato_predicao' captura.predicao.pk 'guide' %}"
-                           alt="Regiões avaliadas pelo MobileSAM">
+                      <button class="link-imagem-analise"
+                              type="button"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modalImagemGuia"
+                              aria-label="Ampliar regiões avaliadas">
+                        <img class="imagem-captura-analise"
+                             src="{% url 'api_artefato_predicao' captura.predicao.pk 'guide' %}"
+                             alt="Regiões avaliadas pelo MobileSAM">
+                      </button>
                     </div>
                     <small class="text-muted">Regiões avaliadas</small>
+                  </div>
+                </div>
+                <div class="modal fade"
+                     id="modalImagemProcessada"
+                     tabindex="-1"
+                     aria-labelledby="tituloModalImagemProcessada"
+                     aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="tituloModalImagemProcessada">Imagem processada</h2>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                      </div>
+                      <div class="modal-body corpo-modal-imagem-analise">
+                        <img class="imagem-analise-modal"
+                             src="{% url 'api_artefato_predicao' captura.predicao.pk 'processed' %}"
+                             alt="Folha processada pelo MobileSAM em tamanho ampliado">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal fade"
+                     id="modalImagemGuia"
+                     tabindex="-1"
+                     aria-labelledby="tituloModalImagemGuia"
+                     aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="tituloModalImagemGuia">Regiões avaliadas</h2>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                      </div>
+                      <div class="modal-body corpo-modal-imagem-analise">
+                        <img class="imagem-analise-modal"
+                             src="{% url 'api_artefato_predicao' captura.predicao.pk 'guide' %}"
+                             alt="Regiões avaliadas pelo MobileSAM em tamanho ampliado">
+                      </div>
+                    </div>
                   </div>
                 </div>
               {% endif %}

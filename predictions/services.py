@@ -11,7 +11,7 @@ from PIL import Image, UnidentifiedImageError
 
 from alerts.services import criar_alertas_da_predicao
 from captures.models import Captura
-from predictions.models import Predicao
+from predictions.models import Predicao, ResultadoIA
 from sensors.models import LeituraAmbiental
 
 registrador = logging.getLogger(__name__)
@@ -211,6 +211,8 @@ def processar_captura(captura, executor_analise=None, reprocessar=False):
 
             predicao = Predicao.objects.create(
                 captura=captura_bloqueada,
+                dispositivo=captura_bloqueada.dispositivo,
+                leitura_ambiental=getattr(captura_bloqueada, "leitura_ambiental", None),
                 classe_prevista=classificacao.classe_prevista,
                 confianca=Decimal(str(classificacao.confianca_percentual)).quantize(Decimal("0.01")),
                 tres_principais=tres_principais,
@@ -224,6 +226,18 @@ def processar_captura(captura, executor_analise=None, reprocessar=False):
                 tempo_mobilesam_ms=Decimal(str(resultado.tempo_mobilesam_ms)),
                 dispositivo_processamento=resultado.preprocessamento.dispositivo,
                 motivos_fallback=resultado.preprocessamento.motivos,
+            )
+
+            ResultadoIA.objects.bulk_create(
+                [
+                    ResultadoIA(
+                        analise=predicao,
+                        nome_classe=item["class"],
+                        probabilidade=Decimal(str(item["confidence"])).quantize(Decimal("0.01")),
+                        posicao=posicao,
+                    )
+                    for posicao, item in enumerate(tres_principais, start=1)
+                ]
             )
 
             criar_alertas_da_predicao(predicao)

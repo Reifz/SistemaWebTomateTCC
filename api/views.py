@@ -16,6 +16,7 @@ from rest_framework.authentication import TokenAuthentication
 from alerts.models import Alerta
 from captures.models import Captura
 from dashboard.services import resumo_painel
+from devices.models import Dispositivo, obter_ou_criar_dispositivo_legado
 from sensors.models import LeituraAmbiental
 from predictions.models import Predicao
 from predictions.services import (
@@ -51,9 +52,35 @@ class VisaoCaptura(APIView):
 
         dados = serializador.validated_data
 
+        identificador = dados.get("device_identifier")
+
+        if identificador:
+            try:
+                dispositivo = Dispositivo.objects.get(identificador=identificador.strip().upper())
+            except Dispositivo.DoesNotExist:
+                return Response(
+                    {"device_identifier": ["Dispositivo não cadastrado."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if dispositivo.status != Dispositivo.Status.ATIVO or dispositivo.usuario_id != request.user.id:
+                return Response(
+                    {"detail": "Dispositivo inativo ou não autorizado."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        else:
+            try:
+                dispositivo = obter_ou_criar_dispositivo_legado(request.user)
+            except ValueError as erro:
+                return Response(
+                    {"device_identifier": [str(erro)]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         with transaction.atomic():
             captura = Captura.objects.create(
                 usuario=request.user,
+                dispositivo=dispositivo,
                 imagem=dados["image"],
                 observacao=dados.get("observation", ""),
                 origem=Captura.Origem.ESP32,

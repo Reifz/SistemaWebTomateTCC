@@ -38,10 +38,10 @@ class Alerta(models.Model):
         related_name="alertas",
         null=True,
         blank=True,
-        db_column="prediction_id",
+        db_column="analysis_id",
     )
 
-    tipo = models.CharField("tipo", max_length=20, choices=Tipo.choices, db_index=True, db_column="type")
+    tipo = models.CharField("tipo", max_length=20, choices=Tipo.choices, db_index=True, db_column="alert_type")
 
     severidade = models.CharField(
         "severidade", max_length=8, choices=Severidade.choices, db_index=True, db_column="severity"
@@ -51,10 +51,10 @@ class Alerta(models.Model):
 
     criado_em = models.DateTimeField("data/hora", auto_now_add=True, db_index=True, db_column="created_at")
 
-    visualizado = models.BooleanField("visualizado", default=False, db_index=True, db_column="viewed")
+    visualizado = models.BooleanField("visualizado", default=False, db_index=True, db_column="is_viewed")
 
     class Meta:
-        db_table = "alerts_alert"
+        db_table = "alerts"
 
         ordering = ("-criado_em",)
 

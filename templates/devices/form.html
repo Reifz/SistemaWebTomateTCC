@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }} | Tomate Monitor{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <section class="painel-pagina painel-cabecalho">
+        <div class="cabecalho-pagina">
+          <div>
+            <h1>{{ titulo }}</h1>
+          </div>
+        </div>
+      </section>
+      <form method="post" class="painel-pagina painel-conteudo">
+        {% csrf_token %}
+        {% for campo in formulario %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+            {% if campo.help_text %}
+              <div class="form-text">{{ campo.help_text }}</div>
+            {% endif %}
+            {% for erro in campo.errors %}
+              <div class="text-danger small">{{ erro }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+        {% for erro in formulario.non_field_errors %}
+          <div class="alert alert-danger">{{ erro }}</div>
+        {% endfor %}
+        <button class="btn btn-success" type="submit">Salvar</button>
+        <a class="btn btn-light" href="{% url 'lista_dispositivos' %}">Cancelar</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}
