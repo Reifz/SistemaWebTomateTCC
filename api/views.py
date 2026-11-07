@@ -93,6 +93,17 @@ class VisaoCaptura(APIView):
                 umidade=dados["humidity"],
             )
 
+        try:
+            processar_captura(captura)
+        except ProcessamentoEmAndamento as erro:
+            return Response({"detail": str(erro)}, status=status.HTTP_409_CONFLICT)
+        except (ImagemInvalida, LeituraInvalida) as erro:
+            return Response({"detail": str(erro)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except ModeloIndisponivel as erro:
+            return Response({"detail": str(erro)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        captura.refresh_from_db()
+
         resposta = SerializadorCaptura(captura)
 
         return Response(resposta.data, status=status.HTTP_201_CREATED)

@@ -52,9 +52,11 @@ Os endpoints usam a sessão do Django e exigem autenticação:
 - `GET /api/dashboard/summary/`
 - `GET /api/alerts/`
 
-Exemplo de captura: `{"observation":"Amostra","temperature":"25.00","humidity":"86.00"}`. Para processar: `{"capture_id":1}`.
+Exemplo de captura: `{"device_identifier":"ESTUFA-01","observation":"Amostra","temperature":"25.00","humidity":"86.00"}`.
+Durante a transição, o identificador pode ser omitido quando o usuário possui um
+único dispositivo ativo. Temperatura ou umidade nula é registrada como zero.
 
-A estrutura inicial da API está pronta para a continuidade do projeto. Enquanto a
-integração não for concluída, os endpoints de captura e predição respondem com HTTP
-`501 Not Implemented` e não gravam dados provisórios. Os comentários em `api/views.py`
-indicam as etapas esperadas para conectar o ESP32-CAM, o sensor e o modelo.
+O envio da captura executa automaticamente o pré-processamento e a inferência. A
+requisição aguarda a conclusão da análise antes de responder. O endpoint de predição
+continua disponível para processamentos manuais de capturas existentes com
+`{"capture_id":1}`.

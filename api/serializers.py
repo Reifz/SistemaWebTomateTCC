@@ -13,9 +13,21 @@ class SerializadorEntradaCaptura(serializers.Serializer):
 
     observation = serializers.CharField(required=False, allow_blank=True, max_length=2000)
 
-    temperature = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=60)
+    temperature = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=0,
+        max_value=60,
+        allow_null=True,
+    )
 
-    humidity = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=100)
+    humidity = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        min_value=0,
+        max_value=100,
+        allow_null=True,
+    )
 
     device_identifier = serializers.CharField(required=False, allow_blank=False, max_length=100, trim_whitespace=True)
 
@@ -24,6 +36,12 @@ class SerializadorEntradaCaptura(serializers.Serializer):
             raise serializers.ValidationError("Envie uma imagem JPEG ou JPG.")
 
         return imagem
+
+    def validate_temperature(self, temperatura):
+        return temperatura if temperatura is not None else 0
+
+    def validate_humidity(self, umidade):
+        return umidade if umidade is not None else 0
 
 
 class SerializadorEntradaPredicao(serializers.Serializer):

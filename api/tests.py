@@ -1,4 +1,5 @@
 import tempfile
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -80,6 +81,8 @@ class TestesApi(TestCase):
 
         self.assertEqual(resposta.data["inference_time_ms"], 120)
 
+        processar.assert_called_once_with(captura)
+
     def test_predicao_nao_acessa_captura_de_outro_usuario(self):
         outro_usuario = get_user_model().objects.create_user(
             email="other-api@example.com",
@@ -124,7 +127,8 @@ class TestesApi(TestCase):
             }.issubset(resposta.data)
         )
 
-    def test_captura_preserva_payload_publico_em_ingles(self):
+    @patch("api.views.processar_captura")
+    def test_captura_preserva_payload_publico_em_ingles(self, processar):
         self.client.force_authenticate(self.usuario)
 
         with tempfile.TemporaryDirectory() as pasta_midia, override_settings(MEDIA_ROOT=pasta_midia):
@@ -151,6 +155,117 @@ class TestesApi(TestCase):
                 "environmental_reading",
             }.issubset(resposta.data)
         )
+
+        processar.assert_called_once()
+
+    @patch("api.views.processar_captura")
+    def test_captura_e_processada_automaticamente(self, processar):
+        self.client.force_authenticate(self.usuario)
+
+        def concluir_processamento(captura):
+            Captura.objects.filter(pk=captura.pk).update(
+                status=Captura.Status.PROCESSADA
+            )
+
+            return None, True
+
+        processar.side_effect = concluir_processamento
+
+        with tempfile.TemporaryDirectory() as pasta_midia, override_settings(MEDIA_ROOT=pasta_midia):
+            resposta = self.client.post(
+                reverse("api_captura"),
+                {
+                    "image": self._imagem_jpeg(),
+                    "temperature": "25.00",
+                    "humidity": "70.00",
+                },
+                format="multipart",
+            )
+
+        captura = Captura.objects.get()
+
+        self.assertEqual(resposta.status_code, 201)
+
+        self.assertEqual(resposta.data["status"], Captura.Status.PROCESSADA)
+
+        processar.assert_called_once_with(captura)
+
+    @patch("api.views.processar_captura")
+    def test_captura_converte_leituras_nulas_em_zero(self, processar):
+        self.client.force_authenticate(self.usuario)
+
+        cenarios = (
+            ("", "70.00", Decimal("0.00"), Decimal("70.00")),
+            ("25.00", "", Decimal("25.00"), Decimal("0.00")),
+            ("", "", Decimal("0.00"), Decimal("0.00")),
+        )
+
+        with tempfile.TemporaryDirectory() as pasta_midia, override_settings(MEDIA_ROOT=pasta_midia):
+            for temperatura, umidade, temperatura_esperada, umidade_esperada in cenarios:
+                with self.subTest(temperatura=temperatura, umidade=umidade):
+                    resposta = self.client.post(
+                        reverse("api_captura"),
+                        {
+                            "image": self._imagem_jpeg(),
+                            "temperature": temperatura,
+                            "humidity": umidade,
+                        },
+                        format="multipart",
+                    )
+
+                    self.assertEqual(resposta.status_code, 201)
+
+                    leitura = Captura.objects.latest("pk").leitura_ambiental
+
+                    self.assertEqual(leitura.temperatura, temperatura_esperada)
+
+                    self.assertEqual(leitura.umidade, umidade_esperada)
+
+    def test_captura_rejeita_leituras_ambientais_invalidas(self):
+        self.client.force_authenticate(self.usuario)
+
+        cenarios = (
+            ({"temperature": "30.00"}, "humidity"),
+            ({"temperature": "inválida", "humidity": "50.00"}, "temperature"),
+            ({"temperature": "NaN", "humidity": "50.00"}, "temperature"),
+            ({"temperature": "Infinity", "humidity": "50.00"}, "temperature"),
+            ({"temperature": "-1.00", "humidity": "50.00"}, "temperature"),
+            ({"temperature": "61.00", "humidity": "50.00"}, "temperature"),
+            ({"temperature": "30.00", "humidity": "-1.00"}, "humidity"),
+            ({"temperature": "30.00", "humidity": "101.00"}, "humidity"),
+        )
+
+        with tempfile.TemporaryDirectory() as pasta_midia, override_settings(MEDIA_ROOT=pasta_midia):
+            for leitura, campo_com_erro in cenarios:
+                with self.subTest(leitura=leitura):
+                    resposta = self.client.post(
+                        reverse("api_captura"),
+                        {"image": self._imagem_jpeg(), **leitura},
+                        format="multipart",
+                    )
+
+                    self.assertEqual(400, resposta.status_code)
+
+                    self.assertIn(campo_com_erro, resposta.data)
+
+    @patch("api.views.processar_captura")
+    def test_captura_aceita_limites_ambientais_inclusivos(self, processar):
+        self.client.force_authenticate(self.usuario)
+
+        with tempfile.TemporaryDirectory() as pasta_midia, override_settings(MEDIA_ROOT=pasta_midia):
+            for temperatura, umidade in (("0.00", "0.00"), ("60.00", "100.00")):
+                with self.subTest(temperatura=temperatura, umidade=umidade):
+                    resposta = self.client.post(
+                        reverse("api_captura"),
+                        {
+                            "image": self._imagem_jpeg(),
+                            "temperature": temperatura,
+                            "humidity": umidade,
+                        },
+                        format="multipart",
+                    )
+
+                    self.assertEqual(201, resposta.status_code)
 
     def test_artefatos_preservam_tipos_png_e_jpeg(self):
         self.client.force_authenticate(self.usuario)
